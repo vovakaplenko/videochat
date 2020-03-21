@@ -115,7 +115,7 @@ docker cp $(docker ps --format {{.Names}} | grep keycloak):/tmp/export.json ./do
 
 ### Verify JWT (Id token)
 1. Grab kc-access cookie
-2. Optional `curl http://auth.site.local:8080/auth/realms/social-sender-realm/protocol/openid-connect/certs | jq`
+2. Optional `curl http://auth.site.local:8080/auth/realms/secured-backend-realm/protocol/openid-connect/certs | jq`
 3. Put JWT to [jwt.io debugger](https://jwt.io/)
 4. Go to admin console, Realm Settings and click on Public key with `kid` as in header in `jwt.io`.
 5. Add `-----BEGIN PUBLIC KEY-----` and append `-----END PUBLIC KEY-----` to this copied public key and paste resulting key to `Public key` field in `jwt.io`
@@ -146,3 +146,6 @@ docker cp $(docker ps --format {{.Names}} | grep keycloak):/tmp/export.json ./do
 [WildFly Command Line Interface](https://docs.jboss.org/author/display/WFLY/Command+Line+Interface?_sscc=t)
 
 [Error:java: invalid source release: 8](https://stackoverflow.com/a/26009627)
+
+https://www.keycloak.org/docs/latest/authorization_services/#_service_authorization_api
+http://auth.site.local:8080/auth/realms/secured-backend-realm/.well-known/uma2-configuration

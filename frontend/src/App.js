@@ -1,4 +1,4 @@
-import React, {  useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./header.css"
 import {
     BrowserRouter as Router,
@@ -7,6 +7,7 @@ import {
     Link
 } from "react-router-dom";
 import Chat from "./Chat";
+// import Keycloak from  "http://auth.site.local:8080/auth/js/keycloak.js";
 
 /**
  * Main landing page user starts interaction from
@@ -51,7 +52,7 @@ function App() {
                         <Link className="menu__item" to="/public/chat">Chats</Link>
                     </nav>
                     <div className="callback">
-                        <button className="callback__btn">Заказать звонок</button>
+                        <button className="login__btn">Логин</button>
                     </div>
                 </div>
             </div>
