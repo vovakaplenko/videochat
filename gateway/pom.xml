@@ -95,6 +95,41 @@
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.opentracing.contrib</groupId>
+            <artifactId>opentracing-spring-jaeger-cloud-starter</artifactId>
+            <version>3.1.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-messaging-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-cloud-jms-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-cloud-feign-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-cloud-hystrix-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-cloud-rxjava-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-cloud-mongo-starter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.opentracing.contrib</groupId>
+                    <artifactId>opentracing-spring-cloud-zuul-starter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <repositories>

@@ -26,3 +26,8 @@ spring:
             - name: Retry
               args:
                 methods: GET
+opentracing:
+  jaeger:
+    enable-b3-propagation: true
+    const-sampler:
+      decision: true
