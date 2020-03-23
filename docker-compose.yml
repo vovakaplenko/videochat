@@ -35,6 +35,8 @@ services:
       POSTGRES_PASSWORD: password
     networks:
       backend:
+    ports:
+      - 4432:5432
     logging:
       driver: "json-file"
       options:

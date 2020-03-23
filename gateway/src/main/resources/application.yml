@@ -1,4 +1,5 @@
 logging.level.org.springframework.cloud.gateway.filter: trace
+logging.level.org.springframework.data.r2dbc: DEBUG
 
 server:
   port: 8282
@@ -10,6 +11,30 @@ spring:
 #        no-cache: false
 #        max-age: 40s
 #    static-locations: file:/home/nkonev/go_1_11/videochat/frontend-nginx/
+  r2dbc:
+    url: r2dbc:postgres://localhost:4432/chat
+    username: chat
+    password: password
+    pool:
+      validation-query: SELECT 1
+    # todo check
+    # https://github.com/r2dbc/r2dbc-postgresql
+    # https://github.com/r2dbc/r2dbc-postgresql
+    properties:
+      lock_timeout: 40000
+      statement_timeout: 40000
+      idle_in_transaction_session_timeout: 40000
+  flyway:
+    locations: classpath:/db/migration
+    url: jdbc:postgresql://localhost:4432/chat?connectTimeout=10&socketTimeout=40
+    user: chat
+    password: password
+  datasource:
+    driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:4432/chat?connectTimeout=10&socketTimeout=40
+#    username: chat
+#    password: password
+
   redis:
     port: 36379
   sleuth:
