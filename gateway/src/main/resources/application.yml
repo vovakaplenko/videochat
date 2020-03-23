@@ -24,16 +24,6 @@ spring:
       lock_timeout: 40000
       statement_timeout: 40000
       idle_in_transaction_session_timeout: 40000
-  flyway:
-    locations: classpath:/db/migration
-    url: jdbc:postgresql://localhost:4432/chat?connectTimeout=10&socketTimeout=40
-    user: chat
-    password: password
-  datasource:
-    driver-class-name: org.postgresql.Driver
-#    url: jdbc:postgresql://localhost:4432/chat?connectTimeout=10&socketTimeout=40
-#    username: chat
-#    password: password
 
   redis:
     port: 36379
