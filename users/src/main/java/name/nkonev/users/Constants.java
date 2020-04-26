@@ -38,4 +38,8 @@ public class Constants {
     }
 
     public static final String DELETED = "deleted";
+
+    // TODO pass back to gateway
+    public static final String USER_HEADER =  "X-Auth-User-Id";
+
 }
