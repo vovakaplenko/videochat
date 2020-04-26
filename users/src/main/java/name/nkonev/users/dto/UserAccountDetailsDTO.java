@@ -1,18 +1,12 @@
-package name.nkonev.users.dto;
+/*package name.nkonev.users.dto;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 
 // TODO either remove either prevent to serialize
-/**
- * Internal class for Spring Security, it shouldn't be passed to browser via Rest API
- */
 public class UserAccountDetailsDTO extends UserAccountDTO implements UserDetails, OAuth2User {
     private static final long serialVersionUID = -3271989114498135073L;
 
@@ -144,3 +138,4 @@ public class UserAccountDetailsDTO extends UserAccountDTO implements UserDetails
     }
 
 }
+*/

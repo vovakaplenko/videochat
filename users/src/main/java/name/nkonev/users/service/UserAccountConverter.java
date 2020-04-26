@@ -1,17 +1,16 @@
 package name.nkonev.users.service;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import static name.nkonev.users.Constants.FACEBOOK_LOGIN_PREFIX;
+import static name.nkonev.users.Constants.VKONTAKTE_LOGIN_PREFIX;
+
+import name.nkonev.users.ApiConstants;
 import name.nkonev.users.dto.EditUserDTO;
+import name.nkonev.users.dto.OauthIdentifiersDTO;
 import name.nkonev.users.dto.UserAccountDTO;
-import name.nkonev.users.dto.UserAccountDTOExtended;
-import name.nkonev.users.dto.UserAccountDetailsDTO;
 import name.nkonev.users.dto.UserRole;
-import name.nkonev.users.dto.UserSelfProfileDTO;
 import name.nkonev.users.entity.jdbc.UserAccount;
+import name.nkonev.users.entity.jdbc.UserAccount.CreationType;
+import name.nkonev.users.exception.BadRequestException;
 import name.nkonev.users.repository.jdbc.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,7 +39,7 @@ public class UserAccountConverter {
         return new UserAccount.OauthIdentifiers(oauthIdentifiers.getFacebookId(), oauthIdentifiers.getVkontakteId());
     }
 
-    public static UserAccountDetailsDTO convertToUserAccountDetailsDTO(UserAccount userAccount) {
+    /*public static UserAccountDetailsDTO convertToUserAccountDetailsDTO(UserAccount userAccount) {
         if (userAccount == null) { return null; }
         return new UserAccountDetailsDTO(
                 userAccount.getId(),
@@ -88,7 +87,7 @@ public class UserAccountConverter {
     private static Collection<SimpleGrantedAuthority> convertRoles(Collection<UserRole> roles) {
         if (roles==null) {return null;}
         return roles.stream().map(ur -> new SimpleGrantedAuthority(ur.name())).collect(Collectors.toSet());
-    }
+    }*/
 
     public UserAccountDTO convertToUserAccountDTO(UserAccount userAccount) {
         if (userAccount == null) { return null; }
@@ -101,7 +100,7 @@ public class UserAccountConverter {
         );
     }
 
-    public OwnerDTO convertToOwnerDTO(Long ownerId) {
+    /*public OwnerDTO convertToOwnerDTO(Long ownerId) {
         if (ownerId == null) { return null; }
         Optional<UserAccount> byId = userAccountRepository.findById(ownerId);
         return byId.map(userAccount -> new OwnerDTO(
@@ -110,29 +109,19 @@ public class UserAccountConverter {
                 userAccount.getAvatar()
         )).orElse(null);
     }
-
-    public UserAccountDTOExtended convertToUserAccountDTOExtended(UserAccountDetailsDTO currentUser, UserAccount userAccount) {
+*/
+    public UserAccountDTO convertToUserAccountDTOExtended(UserAccount userAccount) {
         if (userAccount == null) { return null; }
-        UserAccountDTOExtended.DataDTO dataDTO;
-        if (blogSecurityService.hasSessionManagementPermission(currentUser)){
-            dataDTO = new UserAccountDTOExtended.DataDTO(userAccount.isEnabled(), userAccount.isExpired(), userAccount.isLocked(), userAccount.getRole());
-        } else {
-            dataDTO = null;
-        }
-        return new UserAccountDTOExtended(
+        return new UserAccountDTO(
                 userAccount.getId(),
                 userAccount.getUsername(),
                 userAccount.getAvatar(),
-                dataDTO,
                 userAccount.getLastLoginDateTime(),
-                convertOauth(userAccount.getOauthIdentifiers()),
-                blogSecurityService.canLock(currentUser, userAccount),
-                blogSecurityService.canDelete(currentUser, userAccount),
-                blogSecurityService.canChangeRole(currentUser, userAccount)
+                convertOauth(userAccount.getOauthIdentifiers())
         );
     }
 
-    public static UserAccountDTO convertToUserAccountDTO(UserAccountDetailsDTO userAccount) {
+    /*public static UserAccountDTO convertToUserAccountDTO(UserAccountDetailsDTO userAccount) {
         if (userAccount == null) { return null; }
         return new UserAccountDTO(
                 userAccount.getId(),
@@ -141,7 +130,7 @@ public class UserAccountConverter {
                 userAccount.getLastLoginDateTime(),
                 userAccount.getOauthIdentifiers()
         );
-    }
+    }*/
 
 
     private static void validateUserPassword(String password) {
@@ -185,8 +174,8 @@ public class UserAccountConverter {
         Assert.notNull(login, "login cannot be null");
         login = login.trim();
         Assert.hasLength(login, "login should have length");
-        Assert.isTrue(!login.startsWith(FacebookOAuth2UserService.LOGIN_PREFIX), "not allowed prefix");
-        Assert.isTrue(!login.startsWith(VkontakteOAuth2UserService.LOGIN_PREFIX), "not allowed prefix");
+        Assert.isTrue(!login.startsWith(FACEBOOK_LOGIN_PREFIX), "not allowed prefix");
+        Assert.isTrue(!login.startsWith(VKONTAKTE_LOGIN_PREFIX), "not allowed prefix");
 
         return login;
     }

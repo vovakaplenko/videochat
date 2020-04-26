@@ -1,10 +1,10 @@
 package name.nkonev.users.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.github.nkonev.blog.ApiConstants;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import javax.validation.constraints.NotEmpty;
+import name.nkonev.users.ApiConstants;
 
 /**
  * Created by nik on 22.06.17.
@@ -24,6 +24,55 @@ public class UserAccountDTO implements Serializable {
     private LocalDateTime lastLoginDateTime;
 
     private OauthIdentifiersDTO oauthIdentifiers = new OauthIdentifiersDTO();
+
+    public static class DataDTO {
+        private boolean enabled;
+        private boolean expired;
+        private boolean locked;
+        private UserRole role;
+
+        public DataDTO(boolean enabled, boolean expired, boolean locked, UserRole role) {
+            this.enabled = enabled;
+            this.expired = expired;
+            this.locked = locked;
+            this.role = role;
+        }
+
+        public DataDTO() { }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public boolean isExpired() {
+            return expired;
+        }
+
+        public void setExpired(boolean expired) {
+            this.expired = expired;
+        }
+
+        public boolean isLocked() {
+            return locked;
+        }
+
+        public void setLocked(boolean locked) {
+            this.locked = locked;
+        }
+
+        public UserRole getRole() {
+            return role;
+        }
+
+        public void setRole(UserRole role) {
+            this.role = role;
+        }
+    }
+
 
     public UserAccountDTO(Long id, String login, String avatar, LocalDateTime lastLoginDateTime, OauthIdentifiersDTO oauthIdentifiers) {
         this.id = id;

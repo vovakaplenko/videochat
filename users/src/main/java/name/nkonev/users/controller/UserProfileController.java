@@ -82,7 +82,7 @@ public class UserProfileController {
     }
 
     private Function<UserAccount, UserAccountDTO> getConvertToUserAccountDTO() {
-        return userAccount -> userAccountConverter.convertToUserAccountDTOExtended(null, userAccount);
+        return userAccount -> userAccountConverter.convertToUserAccountDTOExtended(userAccount);
     }
 
     @GetMapping(value = Constants.Urls.USER+ Constants.Urls.USER_ID)

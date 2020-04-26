@@ -42,4 +42,8 @@ public class Constants {
     // TODO pass back to gateway
     public static final String USER_HEADER =  "X-Auth-User-Id";
 
+    public static final String FACEBOOK_LOGIN_PREFIX = "facebook_";
+    public static final String VKONTAKTE_LOGIN_PREFIX = "vkontakte_";
+
+
 }
