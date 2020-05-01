@@ -1,14 +1,14 @@
 package name.nkonev.users.controller;
 
-import com.github.nkonev.blog.Constants;
-import com.github.nkonev.blog.converter.UserAccountConverter;
-import com.github.nkonev.blog.dto.EditUserDTO;
-import com.github.nkonev.blog.entity.jdbc.UserAccount;
-import com.github.nkonev.blog.entity.redis.UserConfirmationToken;
-import com.github.nkonev.blog.exception.UserAlreadyPresentException;
-import com.github.nkonev.blog.repository.jdbc.UserAccountRepository;
-import com.github.nkonev.blog.repository.redis.UserConfirmationTokenRepository;
-import com.github.nkonev.blog.services.EmailService;
+import name.nkonev.users.Constants;
+import name.nkonev.users.dto.EditUserDTO;
+import name.nkonev.users.entity.jdbc.UserAccount;
+import name.nkonev.users.entity.redis.UserConfirmationToken;
+import name.nkonev.users.exception.UserAlreadyPresentException;
+import name.nkonev.users.repository.jdbc.UserAccountRepository;
+import name.nkonev.users.repository.redis.UserConfirmationTokenRepository;
+import name.nkonev.users.service.EmailService;
+import name.nkonev.users.service.UserAccountConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +66,8 @@ public class RegistrationController {
             return; // we care for user email leak
         }
 
-        UserAccount userAccount = UserAccountConverter.buildUserAccountEntityForInsert(userAccountDTO, passwordEncoder);
+        UserAccount userAccount = UserAccountConverter
+            .buildUserAccountEntityForInsert(userAccountDTO, passwordEncoder);
 
         userAccount = userAccountRepository.save(userAccount);
         UserConfirmationToken userConfirmationToken = createUserConfirmationToken(userAccount);
