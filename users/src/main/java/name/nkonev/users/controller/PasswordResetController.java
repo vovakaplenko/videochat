@@ -1,13 +1,13 @@
 package name.nkonev.users.controller;
 
-import com.github.nkonev.blog.ApiConstants;
-import com.github.nkonev.blog.Constants;
-import com.github.nkonev.blog.entity.jdbc.UserAccount;
-import com.github.nkonev.blog.entity.redis.PasswordResetToken;
-import com.github.nkonev.blog.exception.PasswordResetTokenNotFoundException;
-import com.github.nkonev.blog.repository.jdbc.UserAccountRepository;
-import com.github.nkonev.blog.repository.redis.PasswordResetTokenRepository;
-import com.github.nkonev.blog.services.EmailService;
+import name.nkonev.users.ApiConstants;
+import name.nkonev.users.Constants;
+import name.nkonev.users.entity.jdbc.UserAccount;
+import name.nkonev.users.entity.redis.PasswordResetToken;
+import name.nkonev.users.exception.PasswordResetTokenNotFoundException;
+import name.nkonev.users.repository.jdbc.UserAccountRepository;
+import name.nkonev.users.repository.redis.PasswordResetTokenRepository;
+import name.nkonev.users.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
