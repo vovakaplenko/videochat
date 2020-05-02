@@ -36,6 +36,7 @@ public class PasswordResetController {
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
+    // TODO config
     @Value("${custom.password-reset.token.ttl-minutes}")
     private long passwordResetTokenTtlMinutes;
 

@@ -1,4 +1,4 @@
-package name.nkonev.users.controller;
+/*package name.nkonev.users.controller;
 
 import com.github.nkonev.blog.AbstractUtTestRunner;
 import com.github.nkonev.blog.Constants;
@@ -396,3 +396,4 @@ public class RegistrationControllerTest extends AbstractUtTestRunner {
     }
 
 }
+*/

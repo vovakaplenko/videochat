@@ -1,20 +1,13 @@
 package name.nkonev.users.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.github.nkonev.blog.AbstractUtTestRunner;
-import com.github.nkonev.blog.CommonTestConstants;
-import com.github.nkonev.blog.Constants;
-import com.github.nkonev.blog.TestConstants;
-import com.github.nkonev.blog.converter.UserAccountConverter;
-import com.github.nkonev.blog.dto.EditUserDTO;
-import com.github.nkonev.blog.dto.LockDTO;
-import com.github.nkonev.blog.dto.UserRole;
-import com.github.nkonev.blog.entity.jdbc.CreationType;
-import com.github.nkonev.blog.entity.jdbc.Post;
-import com.github.nkonev.blog.entity.jdbc.UserAccount;
-import com.github.nkonev.blog.repository.jdbc.PostRepository;
-import com.github.nkonev.blog.repository.jdbc.UserAccountRepository;
-import com.github.nkonev.blog.security.BlogUserDetailsService;
+import name.nkonev.users.AbstractUtTestRunner;
+import name.nkonev.users.Constants;
+import name.nkonev.users.dto.EditUserDTO;
+import name.nkonev.users.entity.jdbc.UserAccount;
+import name.nkonev.users.repository.jdbc.UserAccountRepository;
+import name.nkonev.users.service.FutureUserDetailsService;
+import name.nkonev.users.service.UserAccountConverter;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -34,8 +27,7 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.github.nkonev.blog.utils.TimeUtil.getNowUTC;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class UserProfileControllerTest extends AbstractUtTestRunner {
@@ -46,11 +38,9 @@ public class UserProfileControllerTest extends AbstractUtTestRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PostRepository postRepository;
 
     @Autowired
-    private BlogUserDetailsService blogUserDetailsService;
+    private FutureUserDetailsService blogUserDetailsService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserProfileControllerTest.class);
 
@@ -86,7 +76,6 @@ public class UserProfileControllerTest extends AbstractUtTestRunner {
                 post(Constants.Urls.API+ Constants.Urls.PROFILE)
                         .content(objectMapper.writeValueAsString(edit))
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .with(csrf())
         )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.login").value(newLogin))

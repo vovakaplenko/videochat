@@ -39,6 +39,7 @@ public class RegistrationController {
     @Autowired
     private EmailService emailService;
 
+    // TODO config
     @Value("${custom.confirmation.registration.token.ttl-minutes}")
     private long userConfirmationTokenTtlMinutes;
 

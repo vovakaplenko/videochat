@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
+    // TODO config
     @Value("${custom.base-url}")
     private String baseUrl;
 
