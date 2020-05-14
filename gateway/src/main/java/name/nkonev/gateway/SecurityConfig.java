@@ -9,6 +9,7 @@ import org.springframework.cloud.gateway.route.Route;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -66,7 +67,9 @@ public class SecurityConfig {
                         .flatMap(response -> {
                             HttpStatus statusCode = response.statusCode();
                             if (statusCode.value() == 401) {
-                                return response.releaseBody().then(Mono.error(new SetStatusException("AAA Unauthorized", statusCode.value())));
+                                return exchange.getRequest().getBody().map(DataBufferUtils::release)
+                                        .then(response.releaseBody())
+                                        .then(Mono.error(new SetStatusException("AAA Unauthorized", statusCode.value())));
                             }
 
                             return response
