@@ -23,7 +23,7 @@ import Chat from './Chat'
 const App = ({ currentState, dispatch }) => {
 
     // https://ru.reactjs.org/docs/hooks-effect.html
-    useEffect(() => {
+    /*useEffect(() => {
         function showHeader() {
             console.log("Called showHeader");
             var header = document.querySelector('.header');
@@ -41,7 +41,7 @@ const App = ({ currentState, dispatch }) => {
             window.onscroll = null;
         };
     });
-
+*/
     function redirector() {
         // https://tylermcginnis.com/react-router-programmatically-navigate/
         // https://medium.com/@anneeb/redirecting-in-react-4de5e517354a

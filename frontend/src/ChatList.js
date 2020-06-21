@@ -93,13 +93,24 @@ function ChatList({ currentState, dispatch }) {
             });
     };
 
+    const isEmpty = (arr) => {
+        if (Array.isArray(arr) && arr.length) {
+            return false;
+        } else {
+            return true;
+        }
+    };
+
     const loadMore = (page = 0) => {
         console.log("Invoking loadMore with page", page);
         axios
             .get(`/api/chat?page=${page}`)
             .then(message => {
-                setChats([...chats, ...message.data]);
-                setHasMore(!!message.data.length);
+                const newChats = [...chats, ...message.data];
+                const hasMoreChats = !isEmpty(message.data);
+                //console.log("New chats:", newChats, "returned ", message.data, "hasMore", hasMoreChats);
+                setChats(newChats);
+                setHasMore(hasMoreChats);
             });
     };
 
@@ -133,13 +144,9 @@ function ChatList({ currentState, dispatch }) {
         handleCloseConfirmModal();
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const classes = useStyles();
 
-    let chatContent;
+    /*let chatContent;
     if (Array.isArray(chats) && chats.length) {
         chatContent = (
         <InfiniteScroll
@@ -191,7 +198,7 @@ function ChatList({ currentState, dispatch }) {
             No elements
         </div>
         );
-    }
+    }*/
 
     return (
             <div className={classes.root}>
@@ -212,7 +219,48 @@ function ChatList({ currentState, dispatch }) {
                     <AddIcon className="fab-add"/>
                 </Fab>
 
-                {chatContent}
+                <InfiniteScroll
+                    pageStart={-1}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loader={<CircularProgress size={72} thickness={8} variant={'indeterminate'} disableShrink={true} key={-2}/>}
+                >
+                    <List className="chat-list">
+                        {chats.map((value, index) => {
+                            return (
+                                <ListItem key={value.id} button>
+
+                                    <Grid container spacing={1} direction="row">
+                                        <Grid container item xs alignItems="center" spacing={1} className="downloadable-clickable">
+                                            <RouteLink to={"/chat/"+value.id}>
+                                                <ListItemText>
+                                                    <Box fontFamily="Monospace" className="list-element">
+                                                        {value.name}
+                                                    </Box>
+                                                </ListItemText>
+                                            </RouteLink>
+                                        </Grid>
+
+                                        <Grid container item xs={2} direction="row"
+                                              justify="flex-end"
+                                              alignItems="center" spacing={1}>
+                                            <Grid item>
+                                                <Button variant="contained" color="primary" onClick={() => handleEditModalOpen(value)}>
+                                                    Edit
+                                                </Button>
+                                            </Grid>
+                                            <Grid item>
+                                                <Button variant="contained" color="secondary" onClick={() => openDeleteModal(value)}>
+                                                    Delete
+                                                </Button>
+                                            </Grid>
+                                        </Grid>
+                                    </Grid>
+                                </ListItem>
+                            )
+                        })}
+                    </List>
+                </InfiniteScroll>
 
                 { currentState.editModal ? <ChatEdit passEditDto={ editDto } fetchData={ fetchData }/> : ""}
 
