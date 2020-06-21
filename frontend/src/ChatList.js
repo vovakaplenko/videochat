@@ -18,6 +18,7 @@ import {openEditModal, closeEditModal} from "./actions";
 import {connect} from "react-redux";
 import { Link as RouteLink } from "react-router-dom";
 import InfiniteScroll from 'react-infinite-scroller';
+import {isEmptyArray} from './utils'
 
 const useStyles = makeStyles(theme => ({
     appHeader: {
@@ -93,21 +94,13 @@ function ChatList({ currentState, dispatch }) {
             });
     };
 
-    const isEmpty = (arr) => {
-        if (Array.isArray(arr) && arr.length) {
-            return false;
-        } else {
-            return true;
-        }
-    };
-
     const loadMore = (page = 0) => {
         console.log("Invoking loadMore with page", page);
         axios
             .get(`/api/chat?page=${page}`)
             .then(message => {
                 const newChats = [...chats, ...message.data];
-                const hasMoreChats = !isEmpty(message.data);
+                const hasMoreChats = !isEmptyArray(message.data);
                 //console.log("New chats:", newChats, "returned ", message.data, "hasMore", hasMoreChats);
                 setChats(newChats);
                 setHasMore(hasMoreChats);

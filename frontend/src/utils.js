@@ -8,3 +8,11 @@ export const getProfile = (dispatch) => {
         })
 
 };
+
+export const isEmptyArray = (arr) => {
+    if (Array.isArray(arr) && arr.length) {
+        return false;
+    } else {
+        return true;
+    }
+};
