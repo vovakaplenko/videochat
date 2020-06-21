@@ -146,59 +146,8 @@ function ChatList({ currentState, dispatch }) {
 
     const classes = useStyles();
 
-    /*let chatContent;
-    if (Array.isArray(chats) && chats.length) {
-        chatContent = (
-        <InfiniteScroll
-                pageStart={0}
-                loadMore={loadMore}
-                hasMore={hasMore}
-                loader={<CircularProgress size={72} thickness={8} variant={'indeterminate'} disableShrink={true} key={0}/>}
-            >
-            <List className="chat-list">
-                {chats.map((value, index) => {
-                    return (
-                        <ListItem key={value.id} button>
-
-                            <Grid container spacing={1} direction="row">
-                                <Grid container item xs alignItems="center" spacing={1} className="downloadable-clickable">
-                                    <RouteLink to={"/chat/"+value.id}>
-                                        <ListItemText>
-                                            <Box fontFamily="Monospace" className="list-element">
-                                                {value.name}
-                                            </Box>
-                                        </ListItemText>
-                                    </RouteLink>
-                                </Grid>
-
-                                <Grid container item xs={2} direction="row"
-                                      justify="flex-end"
-                                      alignItems="center" spacing={1}>
-                                    <Grid item>
-                                        <Button variant="contained" color="primary" onClick={() => handleEditModalOpen(value)}>
-                                            Edit
-                                        </Button>
-                                    </Grid>
-                                    <Grid item>
-                                        <Button variant="contained" color="secondary" onClick={() => openDeleteModal(value)}>
-                                            Delete
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </Grid>
-                        </ListItem>
-                    )
-                })}
-            </List>
-        </InfiniteScroll>
-        );
-    } else {
-        chatContent = (
-        <div>
-            No elements
-        </div>
-        );
-    }*/
+    //const loader = <CircularProgress size={72} thickness={8} variant={'indeterminate'} disableShrink={true} key={-2}/>;
+    const loader = <div className="loader" key={-2}>Loading ...</div>;
 
     return (
             <div className={classes.root}>
@@ -223,7 +172,7 @@ function ChatList({ currentState, dispatch }) {
                     pageStart={-1}
                     loadMore={loadMore}
                     hasMore={hasMore}
-                    loader={<CircularProgress size={72} thickness={8} variant={'indeterminate'} disableShrink={true} key={-2}/>}
+                    loader={loader}
                 >
                     <List className="chat-list">
                         {chats.map((value, index) => {
