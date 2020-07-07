@@ -53,6 +53,7 @@ spring:
       enabled: false
     messaging:
       enabled: false
+    trace-id128: true
 
 custom:
   email:

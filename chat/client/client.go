@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo/v4"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
 	"github.com/spf13/viper"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -24,19 +24,15 @@ func NewRestClient() RestClient {
 		IdleConnTimeout:    viper.GetDuration("http.idle.connTimeout"),
 		DisableCompression: viper.GetBool("http.disableCompression"),
 	}
-	client := &http.Client{Transport: tr}
+	trR := &ochttp.Transport{
+		Base: tr,
+	}
+	client := &http.Client{Transport: trR}
 	return RestClient{client}
 }
 
 // https://developers.google.com/protocol-buffers/docs/gotutorial
 func (rc RestClient) GetUsers(userIds []int64, c echo.Context) ([]*name_nkonev_aaa.UserDto, error) {
-	tracer := opentracing.GlobalTracer()
-
-	// jaeger - server integration
-	spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request().Header))
-	serverSpan := tracer.StartSpan("chat-server", ext.RPCServerOption(spanCtx))
-	defer serverSpan.Finish()
-
 	contentType := "application/x-protobuf;charset=UTF-8"
 	url0 := viper.GetString("aaa.url.base")
 	url1 := viper.GetString("aaa.url.getUsers")
@@ -48,33 +44,15 @@ func (rc RestClient) GetUsers(userIds []int64, c echo.Context) ([]*name_nkonev_a
 		return nil, err
 	}
 
-
 	userRequestReader := bytes.NewReader(useRequestBytes)
 
-	//var trace string
-	//if c != nil {
-	//	trace = c.Request().Header.Get(utils.X_B3_TRACE_ID)
-	//}
-
 	requestHeaders := map[string][]string{
-		"Accept-Encoding":   {"gzip, deflate"},
-		"Accept":            {contentType},
-		"Content-Type":      {contentType},
+		"Accept-Encoding": {"gzip, deflate"},
+		"Accept":          {contentType},
+		"Content-Type":    {contentType},
 	}
 
-	// jaeger - rest client integration
-	clientSpan := serverSpan.Tracer().StartSpan("get-users")
-	defer clientSpan.Finish()
-
-	ext.SpanKindRPCClient.Set(clientSpan)
-	ext.HTTPUrl.Set(clientSpan, fullUrl)
-	ext.HTTPMethod.Set(clientSpan, "GET")
-	err = clientSpan.Tracer().Inject(
-		clientSpan.Context(),
-		opentracing.HTTPHeaders,
-		opentracing.HTTPHeadersCarrier(requestHeaders),
-	)
-	if err!=nil {
+	if err != nil {
 		Logger.Infof("Error during inserting tracing")
 	}
 
@@ -84,13 +62,17 @@ func (rc RestClient) GetUsers(userIds []int64, c echo.Context) ([]*name_nkonev_a
 		return nil, err
 	}
 	userRequestReadCloser := ioutil.NopCloser(userRequestReader)
-	request := http.Request{
+	request := &http.Request{
 		Method: "GET",
 		Header: requestHeaders,
 		Body:   userRequestReadCloser,
 		URL:    parsedUrl,
 	}
-	resp, err := rc.Do(&request)
+
+	ctx, span := trace.StartSpan(c.Request().Context(), "users.Get")
+	defer span.End()
+	request = request.WithContext(ctx)
+	resp, err := rc.Do(request)
 	if err != nil {
 		Logger.Errorln("Failed to request get users response:", err)
 		return nil, err
