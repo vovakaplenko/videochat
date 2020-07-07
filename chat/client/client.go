@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo/v4"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	. "nkonev.name/chat/logger"
 	name_nkonev_aaa "nkonev.name/chat/proto"
-	"nkonev.name/chat/utils"
 )
 
 type RestClient struct {
@@ -29,6 +30,13 @@ func NewRestClient() RestClient {
 
 // https://developers.google.com/protocol-buffers/docs/gotutorial
 func (rc RestClient) GetUsers(userIds []int64, c echo.Context) ([]*name_nkonev_aaa.UserDto, error) {
+	tracer := opentracing.GlobalTracer()
+
+	// jaeger - server integration
+	spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request().Header))
+	serverSpan := tracer.StartSpan("chat-server", ext.RPCServerOption(spanCtx))
+	defer serverSpan.Finish()
+
 	contentType := "application/x-protobuf;charset=UTF-8"
 	url0 := viper.GetString("aaa.url.base")
 	url1 := viper.GetString("aaa.url.getUsers")
@@ -40,19 +48,34 @@ func (rc RestClient) GetUsers(userIds []int64, c echo.Context) ([]*name_nkonev_a
 		return nil, err
 	}
 
+
 	userRequestReader := bytes.NewReader(useRequestBytes)
 
-	var trace string
-	if c != nil {
-		trace = c.Request().Header.Get(utils.X_B3_TRACE_ID)
-	}
+	//var trace string
+	//if c != nil {
+	//	trace = c.Request().Header.Get(utils.X_B3_TRACE_ID)
+	//}
 
 	requestHeaders := map[string][]string{
 		"Accept-Encoding":   {"gzip, deflate"},
 		"Accept":            {contentType},
 		"Content-Type":      {contentType},
-		utils.X_B3_TRACE_ID: {trace},
-		utils.X_B3_SPAN_ID:  {trace},
+	}
+
+	// jaeger - rest client integration
+	clientSpan := serverSpan.Tracer().StartSpan("get-users")
+	defer clientSpan.Finish()
+
+	ext.SpanKindRPCClient.Set(clientSpan)
+	ext.HTTPUrl.Set(clientSpan, fullUrl)
+	ext.HTTPMethod.Set(clientSpan, "GET")
+	err = clientSpan.Tracer().Inject(
+		clientSpan.Context(),
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(requestHeaders),
+	)
+	if err!=nil {
+		Logger.Infof("Error during inserting tracing")
 	}
 
 	parsedUrl, err := url.Parse(fullUrl)
