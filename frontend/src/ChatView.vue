@@ -1,19 +1,19 @@
 <template>
     <v-card>
-        <v-card-title>It's a chat #{{chatId}}</v-card-title>
         <v-row dense>
             <v-col cols="12">
                 <video id="localVideo" autoPlay playsInline style="height: 220px"></video>
                 <video id="remoteVideo" autoPlay playsInline style="height: 220px"></video>
             </v-col>
             <v-col cols="12">
-                <div id="myscroller" style="overflow-y: auto; height: 300px">
+                <div id="myscroller" style="overflow-y: auto; height: 440px">
                     <v-card-text>
 
                         <v-list>
                             <template v-for="(item, index) in items">
                             <v-list-item
                                     :key="item.id"
+                                    dense
                             >
                                 <v-list-item-avatar v-if="item.owner && item.owner.avatar">
                                     <v-img :src="item.owner.avatar"></v-img>
@@ -34,9 +34,9 @@
             </v-col>
         </v-row>
         <v-container>
-            <v-row no-gutters>
+            <v-row no-gutters dense>
                 <v-col cols="12">
-                    <v-text-field label="Send a message" @keyup.native.enter="sendMessageToChat" v-model="chatMessageText" :append-outer-icon="'mdi-send'" @click:append-outer="sendMessageToChat"></v-text-field>
+                    <v-text-field dense label="Send a message" @keyup.native.enter="sendMessageToChat" v-model="chatMessageText" :append-outer-icon="'mdi-send'" @click:append-outer="sendMessageToChat"></v-text-field>
                 </v-col>
             </v-row>
         </v-container>
@@ -48,6 +48,7 @@
     import infinityListMixin, {pageSize} from "./InfinityListMixin";
     import {getData, getProperData} from './centrifugeConnection'
     import Vue from 'vue'
+    import bus, {CHANGE_TITLE} from "./bus";
 
     const setProperData = (message) => {
         return {
@@ -377,7 +378,7 @@
                 this.requestTurn('https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913');
             }
 
-
+            bus.$emit(CHANGE_TITLE, `Chat #${this.chatId}`);
 /////////////////////////////////////////////////////////
 
         },
