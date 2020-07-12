@@ -6,9 +6,8 @@
                 <video id="remoteVideo" autoPlay playsInline style="height: 220px"></video>
             </v-col>
             <v-col cols="12">
-                <div id="myscroller" style="overflow-y: auto; height: 440px">
+                <div id="messagesScroller" :style="scrollerHeight()">
                     <v-card-text>
-
                         <v-list>
                             <template v-for="(item, index) in items">
                             <v-list-item
@@ -26,14 +25,14 @@
                             <v-divider></v-divider>
                             </template>
                         </v-list>
-                        <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#myscroller">
+                        <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top">
                             <div slot="no-more"></div>
                         </infinite-loading>
                     </v-card-text>
-                </div>
+                    </div>
             </v-col>
         </v-row>
-        <v-container>
+        <v-container id="sendButtonContainer">
             <v-row no-gutters dense>
                 <v-col cols="12">
                     <v-text-field dense label="Send a message" @keyup.native.enter="sendMessageToChat" v-model="chatMessageText" :append-outer-icon="'mdi-send'" @click:append-outer="sendMessageToChat"></v-text-field>
@@ -99,6 +98,21 @@
             }
         },
         methods: {
+            scrollerHeight() {
+                const maybeScroller = document.getElementById("messagesScroller");
+                const maybeSendButton = document.getElementById("sendButtonContainer");
+
+                if (maybeScroller && maybeSendButton) {
+                    const topOfScroller = maybeScroller.getBoundingClientRect().top;
+                    const sendButtonContainerHeight = maybeSendButton.getBoundingClientRect().height;
+                    const availableHeight = window.innerHeight;
+                    const newHeight = availableHeight - topOfScroller - sendButtonContainerHeight - 16;
+                    if (newHeight > 0) {
+                        return `overflow-y: auto; height: ${newHeight}px`
+                    }
+                }
+                return 'overflow-y: auto; height: 240px'
+            },
             infiniteHandler($state) {
                 axios.get(`/api/chat/${this.chatId}/message`, {
                     params: {
@@ -315,7 +329,7 @@
                 this.addItem(getData(message).payload);
 
                 Vue.nextTick(()=>{
-                    var myDiv = document.getElementById("myscroller");
+                    var myDiv = document.getElementById("messagesScroller");
                     console.log("myDiv.scrollTop", myDiv.scrollTop, "myDiv.scrollHeight", myDiv.scrollHeight);
                     myDiv.scrollTop = myDiv.scrollHeight;
                 });
@@ -380,7 +394,6 @@
 
             bus.$emit(CHANGE_TITLE, `Chat #${this.chatId}`);
 /////////////////////////////////////////////////////////
-
         },
         beforeDestroy() {
             console.log("Cleaning up");
