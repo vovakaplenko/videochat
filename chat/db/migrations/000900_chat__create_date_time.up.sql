@@ -1,0 +1,1 @@
+alter table chat add column create_date_time TIMESTAMP NOT NULL DEFAULT (now() at time zone 'utc');

@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	. "nkonev.name/chat/logger"
+	"time"
 )
 
 // db model
 type Chat struct {
-	Id    int64
-	Title string
+	Id             int64
+	Title          string
+	CreateDateTime time.Time
 }
 
 // CreateChat creates a new chat.
@@ -33,7 +35,7 @@ func (tx *Tx) CreateChat(u *Chat) (int64, error) {
 
 func (db *DB) GetChats(participantId int64, limit int, offset int, searchString string) ([]*Chat, error) {
 	strForSearch := "%" + searchString + "%"
-	if rows, err := db.Query(`SELECT * FROM chat WHERE id IN ( SELECT chat_id FROM chat_participant WHERE user_id = $1 ) AND chat.title ILIKE $4 ORDER BY id LIMIT $2 OFFSET $3`, participantId, limit, offset, strForSearch); err != nil {
+	if rows, err := db.Query(`SELECT oc.id, oc.title, ou.create_date_time FROM (SELECT max(ca.create_date_time) as create_date_time, ca.chat_id FROM ( select DISTINCT ON (chat_id) max(create_date_time) as create_date_time, m.chat_id from message m WHERE owner_id = $1 GROUP BY chat_id     UNION select max(create_date_time) as  create_date_time, c.id as chat_id from chat c join chat_participant p on p.chat_id = c.id WHERE p.user_id = $1 GROUP BY c.id) ca GROUP BY(ca.chat_id)) ou JOIN chat oc ON ou.chat_id = oc.id WHERE oc.title ILIKE $4 ORDER BY ou.create_date_time DESC LIMIT $2 OFFSET $3`, participantId, limit, offset, strForSearch); err != nil {
 		Logger.Errorf("Error during get chat rows %v", err)
 		return nil, err
 	} else {
@@ -41,7 +43,7 @@ func (db *DB) GetChats(participantId int64, limit int, offset int, searchString 
 		list := make([]*Chat, 0)
 		for rows.Next() {
 			chat := Chat{}
-			if err := rows.Scan(&chat.Id, &chat.Title); err != nil {
+			if err := rows.Scan(&chat.Id, &chat.Title, &chat.CreateDateTime); err != nil {
 				Logger.Errorf("Error during scan chat rows %v", err)
 				return nil, err
 			} else {
