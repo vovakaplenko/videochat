@@ -4,9 +4,9 @@ global:
   sendAnonymousUsage: false
 entryPoints:
   http:
-    address: :80
+    address: :8081
   traefik:
-    address: :8080
+    address: :8083
 providers:
   providersThrottleDuration: 2s
   docker:
@@ -14,7 +14,7 @@ providers:
     watch: true
     exposedByDefault: false
   file:
-    directory: /traefik_conf/dynamic
+    directory: /home/nkonev/go_1_11/videochat/docker/traefik_conf/dynamic
 api:
   insecure: true
   dashboard: true
