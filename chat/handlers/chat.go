@@ -61,7 +61,7 @@ func GetChats(db db.DB, restClient client.RestClient) func(c echo.Context) error
 		} else {
 			chatDtos := make([]*ChatDto, 0)
 			for _, cc := range dbChats {
-				cd := convertToDto(cc, nil)
+				cd := convertToDto(cc, []*dto.User{})
 				chatDtos = append(chatDtos, cd)
 			}
 
@@ -140,7 +140,8 @@ func GetChat(dbR db.DB, restClient client.RestClient) func(c echo.Context) error
 
 			users, err := restClient.GetUsers(cc.ParticipantsIds, c.Request().Context())
 			if err != nil {
-				return err
+				users = []*dto.User{}
+				GetLogEntry(c.Request()).Warn("Error during getting users from aaa")
 			}
 			chatDto := convertToDto(cc, users)
 
