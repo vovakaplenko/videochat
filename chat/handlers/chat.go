@@ -61,13 +61,7 @@ func GetChats(db db.DB, restClient client.RestClient) func(c echo.Context) error
 		} else {
 			chatDtos := make([]*ChatDto, 0)
 			for _, cc := range dbChats {
-				cd := &ChatDto{
-					Id:                 cc.Id,
-					Name:               cc.Title,
-					ParticipantIds:     cc.ParticipantsIds,
-					CanEdit:            null.BoolFrom(cc.IsAdmin),
-					LastUpdateDateTime: cc.LastUpdateDateTime,
-				}
+				cd := convertToDto(cc, nil)
 				chatDtos = append(chatDtos, cd)
 			}
 
@@ -148,14 +142,7 @@ func GetChat(dbR db.DB, restClient client.RestClient) func(c echo.Context) error
 			if err != nil {
 				return err
 			}
-			chatDto := &ChatDto{
-				Id:                 cc.Id,
-				Name:               cc.Title,
-				ParticipantIds:     cc.ParticipantsIds,
-				CanEdit:            null.BoolFrom(cc.IsAdmin),
-				LastUpdateDateTime: cc.LastUpdateDateTime,
-				Participants: users,
-			}
+			chatDto := convertToDto(cc, users)
 
 			GetLogEntry(c.Request()).Infof("Successfully returning %v chat", chatDto)
 			return c.JSON(200, chatDto)
@@ -163,14 +150,13 @@ func GetChat(dbR db.DB, restClient client.RestClient) func(c echo.Context) error
 	}
 }
 
-// TODO DEPRECATE
-func convertToDto(c *db.Chat, participantIds []int64, users []*dto.User, canEdit bool) *ChatDto {
+func convertToDto(c *db.ChatWithParticipants, users []*dto.User) *ChatDto {
 	return &ChatDto{
 		Id:                 c.Id,
 		Name:               c.Title,
-		ParticipantIds:     participantIds,
+		ParticipantIds:     c.ParticipantsIds,
 		Participants:       users,
-		CanEdit:            null.BoolFrom(canEdit),
+		CanEdit:            null.BoolFrom(c.IsAdmin),
 		LastUpdateDateTime: c.LastUpdateDateTime,
 	}
 }
