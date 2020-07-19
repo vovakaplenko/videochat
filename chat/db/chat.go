@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"nkonev.name/chat/auth"
 	. "nkonev.name/chat/logger"
 	"time"
 )
@@ -12,6 +13,12 @@ type Chat struct {
 	Id                 int64
 	Title              string
 	LastUpdateDateTime time.Time
+}
+
+type ChatWithParticipants struct {
+	Chat
+	ParticipantsIds []int64
+	IsAdmin			bool
 }
 
 // CreateChat creates a new chat.
@@ -52,6 +59,50 @@ func (db *DB) GetChats(participantId int64, limit int, offset int, searchString 
 			}
 		}
 		return list, nil
+	}
+}
+
+func convertToWithParticipants(db *DB, chat *Chat, userPrincipalDto *auth.AuthResult) (*ChatWithParticipants, error) {
+	if ids, err := db.GetParticipantIds(chat.Id); err != nil {
+		return nil, err
+	} else {
+		admin, err := db.IsAdmin(userPrincipalDto.UserId, chat.Id)
+		if err != nil {
+			return nil, err
+		}
+		ccc := &ChatWithParticipants{
+			Chat:            *chat,
+			ParticipantsIds: ids,
+			IsAdmin: admin,
+		}
+		return ccc, nil
+	}
+}
+
+func (db *DB) GetChatsWithParticipants(participantId int64, limit int, offset int, searchString string, userPrincipalDto *auth.AuthResult) ([]*ChatWithParticipants, error) {
+	chats, err := db.GetChats(participantId, limit, offset, searchString)
+	if err != nil {
+		return nil, err
+	} else {
+		list := make([]*ChatWithParticipants, 0)
+		for _, cc := range chats {
+			if ccc, err := convertToWithParticipants(db, cc, userPrincipalDto); err != nil {
+				return nil, err
+			} else {
+				list = append(list, ccc)
+			}
+		}
+		return list, nil
+	}
+}
+
+func (db *DB) GetChatWithParticipants(participantId, chatId int64, userPrincipalDto *auth.AuthResult) (*ChatWithParticipants, error) {
+	if chat, err := db.GetChat(participantId, chatId); err != nil {
+		return nil, err
+	} else if chat == nil {
+		return nil, nil
+	} else {
+		return convertToWithParticipants(db, chat, userPrincipalDto)
 	}
 }
 
