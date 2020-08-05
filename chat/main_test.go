@@ -14,8 +14,10 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 	"io"
+	"io/ioutil"
 	"net/http"
 	test "net/http/httptest"
+	"net/url"
 	"nkonev.name/chat/client"
 	"nkonev.name/chat/db"
 	"nkonev.name/chat/handlers"
@@ -177,6 +179,32 @@ func runTest(t *testing.T, testFunc interface{}) *fxtest.App {
 	return app
 }
 
+func startAppFull(t *testing.T) (*fxtest.App, fx.Shutdowner) {
+	var s fx.Shutdowner
+	app := fxtest.New(
+		t,
+		fx.Logger(Logger),
+		fx.Populate(&s),
+		fx.Provide(
+			client.NewRestClient,
+			handlers.ConfigureCentrifuge,
+			handlers.CreateSanitizer,
+			configureEcho,
+			configureStaticMiddleware,
+			handlers.ConfigureAuthMiddleware,
+			db.ConfigureDb,
+			notifications.NewNotifications,
+		),
+		fx.Invoke(
+			runMigrations,
+			runCentrifuge,
+			runEcho,
+			initJaeger,
+		),
+	)
+	return app, s
+}
+
 func TestGetChats(t *testing.T) {
 	runTest(t, func(e *echo.Echo) {
 		c, b, _ := request("GET", "/chat", nil, e)
@@ -277,6 +305,47 @@ func TestChatCrud(t *testing.T) {
 		chatsAfterDelete, _ := db.CountChats()
 		assert.Equal(t, chatsBefore, chatsAfterDelete)
 	})
+}
+
+
+
+func TestCentrifuge1(t *testing.T) {
+	app, s := startAppFull(t)
+	defer app.RequireStart().RequireStop()
+
+	//c := centrifuge.NewClient(context.Background(), nil, newTestTransport())
+
+	r := strings.NewReader(`{"name": "Chat for test the Centrifuge notifications"}`)
+	rc := ioutil.NopCloser(r)
+
+	contentType := "application/json;charset=UTF-8"
+	requestHeaders := map[string][]string{
+		"Accept":          {contentType},
+		"Content-Type":    {contentType},
+		"X-Auth-Expiresin": {"1590022342295000"},
+		"X-Auth-Username":  {"tester"},
+		"X-Auth-Userid":    {"1"},
+	}
+	u, _ := url.Parse("http://localhost:1235/chat")
+	request := &http.Request{
+		Method: "POST",
+		Header: requestHeaders,
+		Body:   rc,
+		URL:    u,
+	}
+
+	cl := client.NewRestClient()
+	resp, err := cl.Do(request)
+	assert.Nil(t, err)
+	assert.Equal(t, 201, resp.StatusCode)
+
+	assert.NoError(t, s.Shutdown(), "error in app shutdown")
+}
+
+func TestCentrifuge2(t *testing.T) {
+	app, s := startAppFull(t)
+	defer app.RequireStart().RequireStop()
+	assert.NoError(t, s.Shutdown(), "error in app shutdown")
 }
 
 func interfaceToString(inter interface{}) string {
