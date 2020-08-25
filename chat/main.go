@@ -40,6 +40,7 @@ func main() {
 			configureEcho,
 			configureStaticMiddleware,
 			handlers.ConfigureAuthMiddleware,
+			db.ConfigureMigrationDb,
 			db.ConfigureDb,
 			notifications.NewNotifications,
 		),
@@ -193,7 +194,7 @@ func initJaeger(lc fx.Lifecycle) error {
 	return nil
 }
 
-func runMigrations(db db.DB) {
+func runMigrations(db db.MigrationDB) {
 	db.Migrate()
 }
 

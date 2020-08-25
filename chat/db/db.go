@@ -20,6 +20,10 @@ type DB struct {
 	*sql.DB
 }
 
+type MigrationDB struct {
+	*sql.DB
+}
+
 type Tx struct {
 	*sql.Tx
 }
@@ -115,19 +119,38 @@ func migrateInternal(db *sql.DB) {
 	if err != nil {
 		Logger.Fatal(err)
 	}
-	//defer m.Close()
+	defer m.Close()
 	if err := m.Up(); err != nil && err.Error() != "no change" {
 		Logger.Fatal(err)
 	}
 }
 
-func (db *DB) Migrate() {
+func (db *MigrationDB) Migrate() {
 	Logger.Infof("Starting migration")
 	migrateInternal(db.DB)
 	Logger.Infof("Migration successful completed")
 }
 
 func ConfigureDb(lc fx.Lifecycle) (DB, error) {
+	dbConnectionString := viper.GetString("postgresql.url")
+	maxOpen := viper.GetInt("postgresql.maxOpenConnections")
+	maxIdle := viper.GetInt("postgresql.maxIdleConnections")
+	maxLifeTime := viper.GetDuration("postgresql.maxLifetime")
+	dbInstance, err := Open(dbConnectionString, maxOpen, maxIdle, maxLifeTime)
+
+	if lc != nil {
+		lc.Append(fx.Hook{
+			OnStop: func(ctx context.Context) error {
+				Logger.Infof("Stopping db connection")
+				return dbInstance.Close()
+			},
+		})
+	}
+
+	return *dbInstance, err
+}
+
+func ConfigureMigrationDb(lc fx.Lifecycle) (DB, error) {
 	dbConnectionString := viper.GetString("postgresql.url")
 	maxOpen := viper.GetInt("postgresql.maxOpenConnections")
 	maxIdle := viper.GetInt("postgresql.maxIdleConnections")
