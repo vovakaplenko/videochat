@@ -150,6 +150,42 @@ func request(method, path string, body io.Reader, e *echo.Echo) (int, string, ht
 	return requestWithHeader(method, path, Header, body, e)
 }
 
+func insertTestData(db db.DB) error {
+	_, err := db.Exec(`
+INSERT INTO chat(title)
+VALUES
+('first'),
+('second'),
+('Тест кириллицы'),
+('lorem'),
+('ipsum'),
+('dolor'),
+('sit'),
+('amet'),
+('With collegues');
+
+INSERT INTO chat (title)
+	SELECT 'generated_chat' || i
+	FROM generate_series(2, 100) AS i;
+
+
+INSERT INTO chat_participant (chat_id, user_id, admin)
+SELECT id AS chat_id, 1 AS user_id, TRUE FROM chat;
+
+INSERT INTO message(text, chat_id, owner_id) VALUES
+('text 1', 1, 1);
+
+
+INSERT INTO message (text, chat_id, owner_id)
+	SELECT
+		'generated_message' || i || ' Lorem Ipsum - это текст-"рыба", часто используемый в печати и вэб-дизайне. Lorem Ipsum является стандартной "рыбой" для текстов на латинице с начала XVI века. В то время некий безымянный печатник создал большую коллекцию размеров и форм шрифтов, используя Lorem Ipsum для распечатки образцов. Lorem Ipsum не только успешно пережил без заметных изменений пять веков, но и перешагнул в электронный дизайн. Его популяризации в новое время послужили публикация листов Letraset с образцами Lorem Ipsum в 60-х годах и, в более недавнее время, программы электронной вёрстки типа Aldus PageMaker, в шаблонах которых используется Lorem Ipsum.',
+		1,
+		1
+	FROM generate_series(0, 500) AS i;
+	`)
+	return err
+}
+
 func runTest(t *testing.T, testFunc interface{}) *fxtest.App {
 	var s fx.Shutdowner
 	app := fxtest.New(
