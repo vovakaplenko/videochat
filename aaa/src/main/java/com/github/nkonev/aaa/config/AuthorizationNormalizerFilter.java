@@ -1,4 +1,4 @@
-package com.github.nkonev.aaa.config;
+/*package com.github.nkonev.aaa.config;
 
 import com.github.nkonev.aaa.Constants;
 import org.springframework.core.annotation.Order;
@@ -12,12 +12,6 @@ import java.util.*;
 
 class RequestWithoutParts extends HttpServletRequestWrapper {
 
-    /**
-     * Constructs a request object wrapping the given request.
-     *
-     * @param request The request to wrap
-     * @throws IllegalArgumentException if the request is null
-     */
     public RequestWithoutParts(HttpServletRequest request) {
         super(request);
     }
@@ -40,3 +34,4 @@ public class AuthorizationNormalizerFilter implements Filter {
         chain.doFilter(httpRequest, response);
     }
 }
+*/

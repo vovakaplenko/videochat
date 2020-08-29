@@ -52,6 +52,7 @@ public class AaaExceptionHandler {
                 message = cause1.getMessage();
             }
         }
+        LOGGER.error("Here is", e);
         return new BlogError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "multipart error", message, new Date().toString());
     }
 
