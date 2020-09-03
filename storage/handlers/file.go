@@ -78,7 +78,7 @@ func (fh *FileHandler) PutAvatar(c echo.Context) error {
 
 	bucketName, err := fh.ensureAndGetAvatarBucket()
 	if err != nil {
-		GetLogEntry(c.Request()).Errorf("Error during get bucket: %v", err)
+		//GetLogEntry(c.Request()).Errorf("Error during get bucket: %v", err)
 		return err
 	}
 
@@ -88,7 +88,7 @@ func (fh *FileHandler) PutAvatar(c echo.Context) error {
 
 	src, err := filePart.Open()
 	if err != nil {
-		GetLogEntry(c.Request()).Errorf("Error during opening multipart file: %v", err)
+		//GetLogEntry(c.Request()).Errorf("Error during opening multipart file: %v", err)
 		return err
 	}
 	defer src.Close()

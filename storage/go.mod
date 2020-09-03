@@ -7,6 +7,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/labstack/echo/v4 v4.1.16
+	github.com/labstack/gommon v0.3.0
 	github.com/minio/minio-go/v7 v7.0.4
 	github.com/nkonev/jaeger-uber-propagation-compat v0.0.0-20200708125206-e763f0a72519
 	github.com/rakyll/statik v0.1.7

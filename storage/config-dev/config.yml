@@ -31,7 +31,7 @@ jaeger:
   endpoint: "localhost:6831"
 
 minio:
-  endpoint: 127.0.0.1:9000
+  endpoint: 127.0.0.1:9898
   accessKeyId: AKIAIOSFODNN7EXAMPLE
   secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
   location: "europe-east"

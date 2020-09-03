@@ -8,6 +8,7 @@ import (
 	"nkonev.name/storage/auth"
 	. "nkonev.name/storage/logger"
 	"nkonev.name/storage/utils"
+	"runtime"
 	"time"
 )
 
@@ -88,5 +89,18 @@ func Convert(h http.Handler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		h.ServeHTTP(c.Response().Writer, c.Request())
 		return nil
+	}
+}
+
+func FancyHandleError(originalHandler func (c echo.Context) error) func(c echo.Context) error  {
+	return func(c echo.Context) error {
+		err := originalHandler(c)
+		if err != nil {
+			// notice that we're using 1, so it will actually log the where
+			// the error happened, 0 = this function, we don't want that.
+			pc, fn, line, _ := runtime.Caller(0)
+			GetLogEntry(c.Request()).Printf("[error] in %s[%s:%d] %v", runtime.FuncForPC(pc).Name(), fn, line, err)
+		}
+		return err
 	}
 }

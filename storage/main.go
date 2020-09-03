@@ -4,12 +4,12 @@ import (
 	"context"
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"fmt"
-	"github.com/rakyll/statik/fs"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	uberCompat "github.com/nkonev/jaeger-uber-propagation-compat/propagation"
+	"github.com/rakyll/statik/fs"
 	"github.com/spf13/viper"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
@@ -18,9 +18,9 @@ import (
 	"nkonev.name/storage/db"
 	"nkonev.name/storage/handlers"
 	. "nkonev.name/storage/logger"
+	_ "nkonev.name/storage/statik"
 	"nkonev.name/storage/utils"
 	"strings"
-	_ "nkonev.name/storage/statik"
 )
 
 const EXTERNAL_TRACE_ID_HEADER = "trace-id"
@@ -74,6 +74,14 @@ func configureOpencensusMiddleware() echo.MiddlewareFunc {
 	}
 }
 
+func createCustomHTTPErrorHandler(e *echo.Echo) func(err error, c echo.Context)  {
+	originalHandler := e.DefaultHTTPErrorHandler
+	return func(err error, c echo.Context) {
+		GetLogEntry(c.Request()).Errorf("Unhandled error: %v", err)
+		originalHandler(err, c)
+	}
+}
+
 func configureEcho(
 	staticMiddleware staticMiddleware,
 	authMiddleware handlers.AuthMiddleware,
@@ -85,6 +93,7 @@ func configureEcho(
 	bodyLimit := viper.GetString("server.body.limit")
 
 	e := echo.New()
+	//e.HTTPErrorHandler = createCustomHTTPErrorHandler(e)
 	e.Logger.SetOutput(Logger.Writer())
 
 	e.Pre(echo.MiddlewareFunc(staticMiddleware))
@@ -95,6 +104,7 @@ func configureEcho(
 		Format: `"remote_ip":"${remote_ip}",` +
 			`"method":"${method}","uri":"${uri}",` +
 			`"status":${status},` +
+			`"error":${error},` +
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out},"traceId":"${header:X-B3-Traceid}"` + "\n",
 	}
 	e.Use(middleware.LoggerWithConfig(accessLoggerConfig))
@@ -102,8 +112,8 @@ func configureEcho(
 	e.Use(middleware.BodyLimit(bodyLimit))
 
 	ch := handlers.NewFileHandler(db, m)
-	e.POST("/storage/avatar", ch.PutAvatar)
-	e.GET(fmt.Sprintf("%v/:filename", handlers.UrlStorageGetAvatar), ch.Download)
+	e.POST("/storage/avatar", handlers.FancyHandleError(ch.PutAvatar))
+	e.GET(fmt.Sprintf("%v/:filename", handlers.UrlStorageGetAvatar), handlers.FancyHandleError(ch.Download))
 
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
