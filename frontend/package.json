@@ -12,6 +12,7 @@
     "centrifuge": "^2.6.2",
     "lodash": "^4.17.15",
     "typeface-roboto": "0.0.75",
+    "v-markdown-editor": "^1.2.6",
     "vue": "^2.6.11",
     "vue-router": "^3.3.4",
     "vuetify": "^2.3.2",

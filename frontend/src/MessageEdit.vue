@@ -7,7 +7,8 @@
                         {{writingUsers.map(v=>v.login).join(', ')}} is writing...
                     </template>
                 </v-col>
-                <v-textarea solo dense label="Send a message" @keyup.ctrl.enter="sendMessageToChat" @keyup.esc="resetInput" v-model="editMessageDto.text" :append-outer-icon="'mdi-send'" @click:append-outer="sendMessageToChat" hide-details></v-textarea>
+                <markdown-editor height="auto" toolbar='' v-model="editMessageDto.text"></markdown-editor>
+                <v-btn @click="sendMessageToChat">Send</v-btn>
             </v-col>
         </v-row>
     </v-container>
@@ -19,6 +20,10 @@
     import throttle from "lodash/throttle";
     import {mapGetters} from "vuex";
     import {GET_USER} from "./store";
+    import 'v-markdown-editor/dist/v-markdown-editor.css';
+    import Editor from 'v-markdown-editor'
+    import Vue from 'vue'
+    Vue.use(Editor);
 
     const dtoFactory = ()=>{
         return {
@@ -88,6 +93,9 @@
         created(){
             this.notifyAboutTyping = throttle(this.notifyAboutTyping, 500);
         },
+        // components: {
+        //   'markdown-editor': Editor
+        // },
         watch: {
             'editMessageDto.text': {
                 handler: function (newValue, oldValue) {
