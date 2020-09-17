@@ -6,33 +6,43 @@
             </pane>
             <pane max-size="90" size="80">
                 <div id="messagesScroller" style="overflow-y: auto; height: 100%">
-                    <v-list>
-                        <template v-for="(item, index) in items">
-                        <v-list-item
-                                :key="item.id"
-                                dense
-                        >
-                            <v-list-item-avatar v-if="item.owner && item.owner.avatar">
-                                <v-img :src="item.owner.avatar"></v-img>
-                            </v-list-item-avatar>
-                            <v-list-item-content @click="onMessageClick(item)">
-                              <v-list-item-subtitle>{{getSubtitle(item)}}</v-list-item-subtitle>
-                              <v-list-item-content class="pre-formatted pa-0">{{item.text}}</v-list-item-content>
-                            </v-list-item-content>
-                            <v-list-item-action>
-                                <v-container class="mb-0 mt-0 pb-0 pt-0">
-                                    <v-icon class="mr-4" v-if="item.canEdit" color="error" @click="deleteMessage(item)" dark small>mdi-delete</v-icon>
-                                    <v-icon v-if="item.canEdit" color="primary" @click="editMessage(item)" dark small>mdi-lead-pencil</v-icon>
-                                </v-container>
-                            </v-list-item-action>
-                        </v-list-item>
-                        <v-divider inset></v-divider>
+                    <DynamicScroller
+                        :items="items"
+                        :min-item-size="54"
+                        class="scroller"
+                        :emitUpdate="true"
+                        @update="onScrollUpdate"
+                    >
+                        <template v-slot="{ item, index, active }">
+                            <DynamicScrollerItem
+                                :item="item"
+                                :active="active"
+                                :size-dependencies="[item.text,]"
+                                :data-index="index"
+                            >
+                                <v-list-item
+                                    :key="item.id"
+                                    dense
+                                >
+                                    <v-list-item-avatar v-if="item.owner && item.owner.avatar">
+                                        <v-img :src="item.owner.avatar"></v-img>
+                                    </v-list-item-avatar>
+                                    <v-list-item-content @click="onMessageClick(item)">
+                                        <v-list-item-subtitle>{{getSubtitle(item)}}</v-list-item-subtitle>
+                                        <v-list-item-content class="pre-formatted pa-0">{{item.text}}</v-list-item-content>
+                                    </v-list-item-content>
+                                    <v-list-item-action>
+                                        <v-container class="mb-0 mt-0 pb-0 pt-0">
+                                            <v-icon class="mr-4" v-if="item.canEdit" color="error" @click="deleteMessage(item)" dark small>mdi-delete</v-icon>
+                                            <v-icon v-if="item.canEdit" color="primary" @click="editMessage(item)" dark small>mdi-lead-pencil</v-icon>
+                                        </v-container>
+                                    </v-list-item-action>
+                                </v-list-item>
+                                <v-divider inset></v-divider>
+                            </DynamicScrollerItem>
                         </template>
-                    </v-list>
-                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#messagesScroller">
-                        <template slot="no-more"><span/></template>
-                        <template slot="no-results"><span/></template>
-                    </infinite-loading>
+                    </DynamicScroller>
+
                 </div>
             </pane>
             <pane max-size="70" size="20">
@@ -43,6 +53,7 @@
 </template>
 
 <script>
+    import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
     import axios from "axios";
     import infinityListMixin, {
         findIndex,
@@ -69,12 +80,18 @@
     import { Splitpanes, Pane } from 'splitpanes'
     import 'splitpanes/dist/splitpanes.css'
     import {getHeight} from "./utils"
-
+    import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 
     export default {
-        mixins:[infinityListMixin()],
+        // mixins:[infinityListMixin()],
         data() {
             return {
+                page: 0,
+                items: [],
+                itemsTotal: 0,
+
+
+
                 chatMessagesSubscription: null,
                 chatDto: {
                     participantIds:[]
@@ -91,6 +108,49 @@
             ...mapGetters({currentUser: GET_USER})
         },
         methods: {
+            // itemsGenerator() {
+            //     axios.get(`/api/chat/${this.chatId}/message`, {
+            //         params: {
+            //             page: this.page,
+            //             size: pageSize,
+            //             reverse: true
+            //         },
+            //     }).then(({ data }) => {
+            //         const list = data;
+            //         if (list.length) {
+            //             this.page += 1;
+            //             // this.items = [...this.items, ...list];
+            //             this.items.unshift(...list.reverse());
+            //             $state?.loaded();
+            //         } else {
+            //             $state?.complete();
+            //         }
+            //     });
+            // },
+            onScrollUpdate(startIndex, endIndex) {
+                console.log("Update startIndex=", startIndex, "endIndex=", endIndex)
+            },
+
+            // not working until you will change this.items list
+            reloadItems() {
+                this.infiniteId += 1;
+                console.log("Resetting infinite loader", this.infiniteId);
+            },
+
+            isLastPage() {
+                const pagesTotal = Math.ceil(this.itemsTotal / pageSize);
+                console.log("isLastPage pagesTotal=", pagesTotal, "this.page=", this.page, "this.itemsTotal=", this.itemsTotal);
+                return this.page === pagesTotal;
+            },
+
+            searchStringChanged() {
+                this.items = [];
+                this.page = 0;
+                this.reloadItems();
+            },
+
+
+
             addItem(dto) {
                 console.log("Adding item", dto);
                 this.items.push(dto);
@@ -229,6 +289,8 @@
             bus.$on(CHAT_DELETED, this.onChatDelete);
             bus.$on(MESSAGE_EDITED, this.onEditMessage);
             bus.$on(VIDEO_LOCAL_ESTABLISHED, this.onVideoChangesHeight);
+
+            this.infiniteHandler();
         },
         beforeDestroy() {
             bus.$off(MESSAGE_ADD, this.onNewMessage);
@@ -246,7 +308,8 @@
         components: {
             MessageEdit,
             ChatVideo,
-            Splitpanes, Pane
+            Splitpanes, Pane,
+            DynamicScroller, DynamicScrollerItem
         }
     }
 </script>
