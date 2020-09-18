@@ -38,7 +38,7 @@
       MESSAGE_ADD,
       MESSAGE_DELETED,
       MESSAGE_EDITED,
-      SET_EDIT_MESSAGE, USER_TYPING,
+      USER_TYPING,
       VIDEO_LOCAL_ESTABLISHED
     } from "./bus";
     import {phoneFactory, titleFactory} from "./changeTitle";
@@ -50,27 +50,8 @@
     import {GET_USER} from "./store";
     import { Splitpanes, Pane } from 'splitpanes'
     import 'splitpanes/dist/splitpanes.css'
-    import {getHeight} from "./utils"
     import VirtualList from 'vue-virtual-scroll-list'
     import ChatMessageItem from "./ChatMessageItem"
-
-    const getPageData = (pageSize, page) => {
-        return axios.get(`/api/chat/1/message`, {
-            params: {
-                page: page,
-                size: pageSize,
-                reverse: true
-            },
-        }).then(({ data }) => {
-            const list = data;
-            if (list.length) {
-                this.page += 1;
-                return list;
-            } else {
-                return [];
-            }
-        });
-    };
 
     export default {
         data() {
