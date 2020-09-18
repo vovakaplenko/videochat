@@ -77,19 +77,6 @@
             ...mapGetters({currentUser: GET_USER})
         },
         methods: {
-            // not working until you will change this.items list
-            reloadItems() {
-                // TODO implement
-                console.warn("TODO implement reloadItems()");
-            },
-            searchStringChanged() {
-                this.items = [];
-                this.page = 0;
-                this.reloadItems();
-            },
-
-
-
             addItem(dto) {
                 console.log("Adding item", dto);
                 this.items.push(dto);
