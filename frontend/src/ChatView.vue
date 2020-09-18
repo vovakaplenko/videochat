@@ -73,19 +73,12 @@
     };
 
     export default {
-        // mixins:[infinityListMixin()],
         data() {
             return {
-                //pageNum: 0,
                 page: 0,
-                // items: getPageData(pageSize, 0),
                 items: [],
-                // items: [{id: 'unique_1', text: 'abc'}, {id: 'unique_2', text: 'xyz'}],
                 itemsTotal: 0,
-                infiniteId: new Date(), // TODO remove
                 itemComponent: ChatMessageItem,
-
-
 
                 chatMessagesSubscription: null,
                 chatDto: {
@@ -105,19 +98,12 @@
         methods: {
             // not working until you will change this.items list
             reloadItems() {
-                this.infiniteId += 1;
-                console.log("Resetting infinite loader", this.infiniteId);
+                // TODO implement
+                console.warn("TODO implement reloadItems()");
             },
-
-            isLastPage() {
-                const pagesTotal = Math.ceil(this.itemsTotal / pageSize);
-                console.log("isLastPage pagesTotal=", pagesTotal, "this.page=", this.page, "this.itemsTotal=", this.itemsTotal);
-                return this.page === pagesTotal;
-            },
-
             searchStringChanged() {
                 this.items = [];
-                this.page = 0; // TODO
+                this.page = 0;
                 this.reloadItems();
             },
 
@@ -141,16 +127,6 @@
             },
 
 
-            scrollerStyle() {
-                return 'overflow-y: auto; height: 100%'
-            },
-            splitpanesStyle() {
-                const calcHeight = getHeight("chatViewContainer", (v) => v + "px", '600px');
-                console.log("Calc height of container", calcHeight);
-
-                //return "height: 700px"
-                return calcHeight
-            },
             onVideoChangesHeight() {
                 console.log("Adjusting height after video has been shown");
                 this.$forceUpdate();
@@ -275,9 +251,6 @@
 
     #chatViewContainer {
         height: calc(100vh - 100px)
-        //position: fixed
-        //height: calc(100% - 80px)
-        //width: calc(100% - 80px)
     }
 
 </style>
