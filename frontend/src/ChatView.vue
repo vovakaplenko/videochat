@@ -5,17 +5,17 @@
                 <ChatVideo :chatDto="chatDto"/>
             </pane>
             <pane max-size="90" size="80">
-                    <virtual-list style="overflow-y: auto; height: 100%"
-                        ref="vsl"
-                        :data-key="'id'"
-                        :data-sources="items"
-                        :data-component="itemComponent"
-                        :estimate-size="70"
-                        :extra-props="{chatId: chatId}"
-                        v-on:totop="infiniteHandler"
-                    >
-                        <div slot="footer" class="loader"></div>
-                    </virtual-list>
+                <virtual-list style="overflow-y: auto; height: 100%"
+                    ref="vsl"
+                    :data-key="'id'"
+                    :data-sources="items"
+                    :data-component="itemComponent"
+                    :estimate-size="200"
+                    :extra-props="{chatId: chatId}"
+                    v-on:totop="infiniteHandler"
+                >
+                    <div slot="footer" class="loader"></div>
+                </virtual-list>
             </pane>
             <pane max-size="70" size="20">
                 <MessageEdit :chatId="chatId"/>
@@ -53,6 +53,10 @@
     import VirtualList from 'vue-virtual-scroll-list'
     import ChatMessageItem from "./ChatMessageItem"
 
+    function getSids (messages) {
+        return messages.map((message) => message.id)
+    }
+
     export default {
         data() {
             return {
@@ -60,6 +64,8 @@
                 items: [],
                 itemsTotal: 0,
                 itemComponent: ChatMessageItem,
+
+                firstLoad: true,
 
                 chatMessagesSubscription: null,
                 chatDto: {
@@ -112,14 +118,41 @@
                     if (list.length) {
                         this.page += 1;
                         this.items.unshift(...list.reverse());
+
+                        if (this.firstLoad) {
+                            this.setVirtualListToBottom();
+                            this.firstLoad = false;
+                        } else {
+                            const sids = getSids(list);
+                            this.$nextTick(() => {
+                                const vsl = this.$refs.vsl
+                                const offset = sids.reduce((previousValue, currentSid) => {
+                                    const previousSize = typeof previousValue === 'string' ? vsl.getSize(previousValue) : previousValue
+                                    return previousSize + this.$refs.vsl.getSize(currentSid)
+                                })
+                                this.setVirtualListToOffset(offset)
+                            })
+                        }
                     }
                 });
+            },
+
+            setVirtualListToOffset (offset) {
+                if (this.$refs.vsl) {
+                    this.$refs.vsl.scrollToOffset(offset)
+                }
+            },
+
+            setVirtualListToBottom () {
+                if (this.$refs.vsl) {
+                    this.$refs.vsl.scrollToBottom()
+                }
             },
 
             onNewMessage(dto) {
                 if (dto.chatId == this.chatId) {
                     this.addItem(dto);
-                    this.scrollDown();
+                    this.setVirtualListToBottom();
                 } else {
                     console.log("Skipping", dto)
                 }
@@ -137,13 +170,6 @@
                 } else {
                     console.log("Skipping", dto)
                 }
-            },
-            scrollDown() {
-                Vue.nextTick(()=>{
-                    var myDiv = document.getElementById("messagesScroller");
-                    console.log("myDiv.scrollTop", myDiv.scrollTop, "myDiv.scrollHeight", myDiv.scrollHeight);
-                    myDiv.scrollTop = myDiv.scrollHeight;
-                });
             },
             getInfo() {
                 return axios.get(`/api/chat/${this.chatId}`).then(({ data }) => {
