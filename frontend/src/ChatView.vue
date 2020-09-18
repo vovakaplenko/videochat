@@ -5,19 +5,17 @@
                 <ChatVideo :chatDto="chatDto"/>
             </pane>
             <pane max-size="90" size="80">
-                <div id="messagesScroller" style="overflow-y: auto; height: 100%">
-                    <virtual-list
+                    <virtual-list style="overflow-y: auto; height: 100%"
                         ref="vsl"
                         :data-key="'id'"
                         :data-sources="items"
                         :data-component="itemComponent"
                         :estimate-size="70"
                         :extra-props="{chatId: chatId}"
-                        v-on:tobottom="onScrollToBottom"
+                        v-on:totop="infiniteHandler"
                     >
                         <div slot="footer" class="loader"></div>
                     </virtual-list>
-                </div>
             </pane>
             <pane max-size="70" size="20">
                 <MessageEdit :chatId="chatId"/>
@@ -105,10 +103,6 @@
             ...mapGetters({currentUser: GET_USER})
         },
         methods: {
-            onScrollToBottom(){
-                console.info("Loading new page!");
-            },
-
             // not working until you will change this.items list
             reloadItems() {
                 this.infiniteId += 1;
