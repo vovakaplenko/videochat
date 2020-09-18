@@ -6,33 +6,17 @@
             </pane>
             <pane max-size="90" size="80">
                 <div id="messagesScroller" style="overflow-y: auto; height: 100%">
-                    <v-list>
-                        <template v-for="(item, index) in items">
-                        <v-list-item
-                                :key="item.id"
-                                dense
-                        >
-                            <v-list-item-avatar v-if="item.owner && item.owner.avatar">
-                                <v-img :src="item.owner.avatar"></v-img>
-                            </v-list-item-avatar>
-                            <v-list-item-content @click="onMessageClick(item)">
-                              <v-list-item-subtitle>{{getSubtitle(item)}}</v-list-item-subtitle>
-                              <v-list-item-content class="pre-formatted pa-0">{{item.text}}</v-list-item-content>
-                            </v-list-item-content>
-                            <v-list-item-action>
-                                <v-container class="mb-0 mt-0 pb-0 pt-0">
-                                    <v-icon class="mr-4" v-if="item.canEdit" color="error" @click="deleteMessage(item)" dark small>mdi-delete</v-icon>
-                                    <v-icon v-if="item.canEdit" color="primary" @click="editMessage(item)" dark small>mdi-lead-pencil</v-icon>
-                                </v-container>
-                            </v-list-item-action>
-                        </v-list-item>
-                        <v-divider inset></v-divider>
-                        </template>
-                    </v-list>
-                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#messagesScroller">
-                        <template slot="no-more"><span/></template>
-                        <template slot="no-results"><span/></template>
-                    </infinite-loading>
+                    <virtual-list
+                        ref="vsl"
+                        :data-key="'id'"
+                        :data-sources="items"
+                        :data-component="itemComponent"
+                        :estimate-size="70"
+                        :extra-props="{chatId: chatId}"
+                        v-on:tobottom="onScrollToBottom"
+                    >
+                        <div slot="footer" class="loader"></div>
+                    </virtual-list>
                 </div>
             </pane>
             <pane max-size="70" size="20">
@@ -44,7 +28,7 @@
 
 <script>
     import axios from "axios";
-    import infinityListMixin, {
+    import {
         findIndex,
         pageSize, replaceInArray
     } from "./InfinityListMixin";
@@ -69,12 +53,42 @@
     import { Splitpanes, Pane } from 'splitpanes'
     import 'splitpanes/dist/splitpanes.css'
     import {getHeight} from "./utils"
+    import VirtualList from 'vue-virtual-scroll-list'
+    import ChatMessageItem from "./ChatMessageItem"
 
+    const getPageData = (pageSize, page) => {
+        return axios.get(`/api/chat/1/message`, {
+            params: {
+                page: page,
+                size: pageSize,
+                reverse: true
+            },
+        }).then(({ data }) => {
+            const list = data;
+            if (list.length) {
+                this.page += 1;
+                return list;
+            } else {
+                return [];
+            }
+        });
+    };
 
     export default {
-        mixins:[infinityListMixin()],
+        // mixins:[infinityListMixin()],
         data() {
             return {
+                //pageNum: 0,
+                page: 0,
+                // items: getPageData(pageSize, 0),
+                items: [],
+                // items: [{id: 'unique_1', text: 'abc'}, {id: 'unique_2', text: 'xyz'}],
+                itemsTotal: 0,
+                infiniteId: new Date(), // TODO remove
+                itemComponent: ChatMessageItem,
+
+
+
                 chatMessagesSubscription: null,
                 chatDto: {
                     participantIds:[]
@@ -91,6 +105,30 @@
             ...mapGetters({currentUser: GET_USER})
         },
         methods: {
+            onScrollToBottom(){
+                console.info("Loading new page!");
+            },
+
+            // not working until you will change this.items list
+            reloadItems() {
+                this.infiniteId += 1;
+                console.log("Resetting infinite loader", this.infiniteId);
+            },
+
+            isLastPage() {
+                const pagesTotal = Math.ceil(this.itemsTotal / pageSize);
+                console.log("isLastPage pagesTotal=", pagesTotal, "this.page=", this.page, "this.itemsTotal=", this.itemsTotal);
+                return this.page === pagesTotal;
+            },
+
+            searchStringChanged() {
+                this.items = [];
+                this.page = 0; // TODO
+                this.reloadItems();
+            },
+
+
+
             addItem(dto) {
                 console.log("Adding item", dto);
                 this.items.push(dto);
@@ -108,14 +146,6 @@
                 this.$forceUpdate();
             },
 
-            deleteMessage(dto){
-                axios.delete(`/api/chat/${this.chatId}/message/${dto.id}`)
-            },
-
-            editMessage(dto){
-                const editMessageDto = {id: dto.id, text: dto.text};
-                bus.$emit(SET_EDIT_MESSAGE, editMessageDto);
-            },
 
             scrollerStyle() {
                 return 'overflow-y: auto; height: 100%'
@@ -132,7 +162,7 @@
                 this.$forceUpdate();
             },
 
-            infiniteHandler($state) {
+            infiniteHandler() {
                 axios.get(`/api/chat/${this.chatId}/message`, {
                     params: {
                         page: this.page,
@@ -143,16 +173,9 @@
                     const list = data;
                     if (list.length) {
                         this.page += 1;
-                        // this.items = [...this.items, ...list];
                         this.items.unshift(...list.reverse());
-                        $state?.loaded();
-                    } else {
-                        $state?.complete();
                     }
                 });
-            },
-            getSubtitle(item) {
-                return `${item.owner.login} at ${item.createDateTime}`
             },
 
             onNewMessage(dto) {
@@ -199,9 +222,6 @@
             onChatDelete(dto) {
                 this.$router.push(({ name: root_name}))
             },
-            onMessageClick(dto) {
-                axios.put(`/api/chat/${this.chatId}/message/read/${dto.id}`);
-            },
             isAllowedVideo() {
                 return this.currentUser && this.$router.currentRoute.name == videochat_name && this.chatDto && this.chatDto.participantIds && this.chatDto.participantIds.length
             },
@@ -229,6 +249,8 @@
             bus.$on(CHAT_DELETED, this.onChatDelete);
             bus.$on(MESSAGE_EDITED, this.onEditMessage);
             bus.$on(VIDEO_LOCAL_ESTABLISHED, this.onVideoChangesHeight);
+
+            this.infiniteHandler();
         },
         beforeDestroy() {
             bus.$off(MESSAGE_ADD, this.onNewMessage);
@@ -246,7 +268,8 @@
         components: {
             MessageEdit,
             ChatVideo,
-            Splitpanes, Pane
+            Splitpanes, Pane,
+            'virtual-list': VirtualList
         }
     }
 </script>
