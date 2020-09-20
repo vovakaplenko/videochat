@@ -5,13 +5,12 @@
                 <ChatVideo :chatDto="chatDto"/>
             </pane>
             <pane max-size="90" size="80">
-                <div id="messagesScroller" style="overflow-y: auto; height: 100%">
+                <div id="messagesScroller" style="overflow-y: auto; height: 100%" @scroll.passive="handleScroll">
+                    <!-- https://github.com/Akryum/vue-virtual-scroller/issues/144#issuecomment-470208067 -->
                     <DynamicScroller
                         :items="items"
                         :min-item-size="54"
                         class="scroller"
-                        :emitUpdate="true"
-                        @update="onScrollUpdate"
                     >
                         <template v-slot="{ item, index, active }">
                             <DynamicScrollerItem
@@ -20,24 +19,7 @@
                                 :size-dependencies="[item.text,]"
                                 :data-index="index"
                             >
-                                <v-list-item
-                                    :key="item.id"
-                                    dense
-                                >
-                                    <v-list-item-avatar v-if="item.owner && item.owner.avatar">
-                                        <v-img :src="item.owner.avatar"></v-img>
-                                    </v-list-item-avatar>
-                                    <v-list-item-content @click="onMessageClick(item)">
-                                        <v-list-item-subtitle>{{getSubtitle(item)}}</v-list-item-subtitle>
-                                        <v-list-item-content class="pre-formatted pa-0">{{item.text}}</v-list-item-content>
-                                    </v-list-item-content>
-                                    <v-list-item-action>
-                                        <v-container class="mb-0 mt-0 pb-0 pt-0">
-                                            <v-icon class="mr-4" v-if="item.canEdit" color="error" @click="deleteMessage(item)" dark small>mdi-delete</v-icon>
-                                            <v-icon v-if="item.canEdit" color="primary" @click="editMessage(item)" dark small>mdi-lead-pencil</v-icon>
-                                        </v-container>
-                                    </v-list-item-action>
-                                </v-list-item>
+                                <ChatMessageItem :item="item" :chatId="chatId"></ChatMessageItem>
                                 <v-divider inset></v-divider>
                             </DynamicScrollerItem>
                         </template>
@@ -81,9 +63,12 @@
     import 'splitpanes/dist/splitpanes.css'
     import {getHeight} from "./utils"
     import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
+    import ChatMessageItem from "./ChatMessageItem";
+    import throttle from "lodash/throttle";
+
+    const LOAD_THRESHOLD_PX = 400;
 
     export default {
-        // mixins:[infinityListMixin()],
         data() {
             return {
                 page: 0,
@@ -91,7 +76,7 @@
                 itemsTotal: 0,
 
 
-
+                prevScrollPosition: 0,
                 chatMessagesSubscription: null,
                 chatDto: {
                     participantIds:[]
@@ -108,29 +93,24 @@
             ...mapGetters({currentUser: GET_USER})
         },
         methods: {
-            // itemsGenerator() {
-            //     axios.get(`/api/chat/${this.chatId}/message`, {
-            //         params: {
-            //             page: this.page,
-            //             size: pageSize,
-            //             reverse: true
-            //         },
-            //     }).then(({ data }) => {
-            //         const list = data;
-            //         if (list.length) {
-            //             this.page += 1;
-            //             // this.items = [...this.items, ...list];
-            //             this.items.unshift(...list.reverse());
-            //             $state?.loaded();
-            //         } else {
-            //             $state?.complete();
-            //         }
-            //     });
-            // },
-            onScrollUpdate(startIndex, endIndex) {
-                console.log("Update startIndex=", startIndex, "endIndex=", endIndex)
-            },
+            handleScroll(e) {
+                const { target } = e;
 
+                /*const currentScroll = target.scrollTop;
+                const scrollableDistance = Math.max(0, target.scrollHeight - target.offsetHeight);
+
+                if (currentScroll >= scrollableDistance - LOAD_THRESHOLD_PX) {
+                    console.log("It's time to load more data!");
+                    this.throttledLoadMessages();
+                }*/
+                const currentScroll = target.scrollTop;
+                const scrollableDistance = Math.max(0, target.scrollHeight - target.offsetHeight);
+                console.log("scrollableDistance", scrollableDistance, "currentScroll", currentScroll)
+                if (currentScroll == 0) {
+                    console.log("It's time to load more data!");
+                    this.throttledLoadMessages();
+                }
+            },
             // not working until you will change this.items list
             reloadItems() {
                 this.infiniteId += 1;
@@ -177,22 +157,13 @@
                 bus.$emit(SET_EDIT_MESSAGE, editMessageDto);
             },
 
-            scrollerStyle() {
-                return 'overflow-y: auto; height: 100%'
-            },
-            splitpanesStyle() {
-                const calcHeight = getHeight("chatViewContainer", (v) => v + "px", '600px');
-                console.log("Calc height of container", calcHeight);
 
-                //return "height: 700px"
-                return calcHeight
-            },
             onVideoChangesHeight() {
                 console.log("Adjusting height after video has been shown");
                 this.$forceUpdate();
             },
 
-            infiniteHandler($state) {
+            infiniteHandler() {
                 axios.get(`/api/chat/${this.chatId}/message`, {
                     params: {
                         page: this.page,
@@ -205,11 +176,11 @@
                         this.page += 1;
                         // this.items = [...this.items, ...list];
                         this.items.unshift(...list.reverse());
-                        $state?.loaded();
-                    } else {
-                        $state?.complete();
                     }
                 });
+            },
+            throttledLoadMessages() {
+                this.infiniteHandler();
             },
             getSubtitle(item) {
                 return `${item.owner.login} at ${item.createDateTime}`
@@ -290,7 +261,7 @@
             bus.$on(MESSAGE_EDITED, this.onEditMessage);
             bus.$on(VIDEO_LOCAL_ESTABLISHED, this.onVideoChangesHeight);
 
-            this.infiniteHandler();
+            this.throttledLoadMessages();
         },
         beforeDestroy() {
             bus.$off(MESSAGE_ADD, this.onNewMessage);
@@ -302,6 +273,9 @@
 
             this.chatMessagesSubscription.unsubscribe();
         },
+        created() {
+            this.throttledLoadMessages = throttle(this.throttledLoadMessages, 500);
+        },
         destroyed() {
             bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(false))
         },
@@ -309,7 +283,8 @@
             MessageEdit,
             ChatVideo,
             Splitpanes, Pane,
-            DynamicScroller, DynamicScrollerItem
+            DynamicScroller, DynamicScrollerItem,
+            ChatMessageItem
         }
     }
 </script>
