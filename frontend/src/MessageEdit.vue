@@ -5,7 +5,9 @@
                 {{writingUsers.map(v=>v.login).join(', ')}} is writing...
             </template>
         </v-col>
-        <v-textarea solo dense id="myTextArea" :height="calcTextareaHeight()" no-resize label="Send a message" @keyup.ctrl.enter="sendMessageToChat" @keyup.esc="resetInput" v-model="editMessageDto.text" :append-outer-icon="'mdi-send'" @click:append-outer="sendMessageToChat" hide-details></v-textarea>
+        <textarea v-model="editMessageDto.text"></textarea>
+        <v-btn>Send</v-btn>
+        <v-btn color="error" class="mr-4" @click="deleteChat">Delete</v-btn>
     </v-container>
 </template>
 
@@ -98,3 +100,12 @@
         },
     }
 </script>
+
+<style scoped lang="stylus">
+    textarea {
+        resize: none;
+        background #00FFFF
+        width 100%
+        height: 50%
+    }
+</style>
