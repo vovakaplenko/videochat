@@ -20,7 +20,7 @@
             </v-list-item>
             </v-list-item-group>
         </v-list>
-        <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId"></infinite-loading>
+        <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" force-use-infinite-wrapper="#messagesScroller"></infinite-loading>
 
     </v-card>
 

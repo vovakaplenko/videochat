@@ -1,40 +1,38 @@
 <template>
     <v-container class="ma-0 pa-0" id="chatViewContainer" fluid>
-        <splitpanes class="default-theme" horizontal style="height: 100%" @resized="onPanesResized">
+        <splitpanes class="default-theme" horizontal style="height: 600px" @resized="onPanesResized">
             <pane v-if="isAllowedVideo()" id="videoBlock">
                 <ChatVideo :chatDto="chatDto"/>
             </pane>
             <pane max-size="90" size="80">
-                <div id="messagesScroller" style="overflow-y: auto; height: 100%">
-                    <v-list>
-                        <template v-for="(item, index) in items">
-                        <v-list-item
-                                :key="item.id"
-                                dense
-                                class="pr-0 pl-1"
-                        >
-                            <v-list-item-avatar v-if="item.owner && item.owner.avatar">
-                                <v-img :src="item.owner.avatar"></v-img>
-                            </v-list-item-avatar>
-                            <v-list-item-content @click="onMessageClick(item)" @mousemove="onMessageMouseMove(item)">
-                              <v-list-item-subtitle>{{getSubtitle(item)}}</v-list-item-subtitle>
-                              <v-list-item-content class="pre-formatted pa-0">{{item.text}}</v-list-item-content>
-                            </v-list-item-content>
-                            <v-list-item-action>
-                                <v-container class="mb-0 mt-0 pb-0 pt-0 mx-2 px-1">
-                                    <v-icon class="mr-2" v-if="item.canEdit" color="error" @click="deleteMessage(item)" dark small>mdi-delete</v-icon>
-                                    <v-icon v-if="item.canEdit" color="primary" @click="editMessage(item)" dark small>mdi-lead-pencil</v-icon>
-                                </v-container>
-                            </v-list-item-action>
-                        </v-list-item>
-                        <v-divider class="ml-15"></v-divider>
-                        </template>
-                    </v-list>
-                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#messagesScroller" :distance="0">
-                        <template slot="no-more"><span/></template>
-                        <template slot="no-results">No messages</template>
-                    </infinite-loading>
-                </div>
+                <v-list>
+                    <template v-for="(item, index) in items">
+                    <v-list-item
+                            :key="item.id"
+                            dense
+                            class="pr-0 pl-1"
+                    >
+                        <v-list-item-avatar v-if="item.owner && item.owner.avatar">
+                            <v-img :src="item.owner.avatar"></v-img>
+                        </v-list-item-avatar>
+                        <v-list-item-content @click="onMessageClick(item)" @mousemove="onMessageMouseMove(item)">
+                          <v-list-item-subtitle>{{getSubtitle(item)}}</v-list-item-subtitle>
+                          <v-list-item-content class="pre-formatted pa-0">{{item.text}}</v-list-item-content>
+                        </v-list-item-content>
+                        <v-list-item-action>
+                            <v-container class="mb-0 mt-0 pb-0 pt-0 mx-2 px-1">
+                                <v-icon class="mr-2" v-if="item.canEdit" color="error" @click="deleteMessage(item)" dark small>mdi-delete</v-icon>
+                                <v-icon v-if="item.canEdit" color="primary" @click="editMessage(item)" dark small>mdi-lead-pencil</v-icon>
+                            </v-container>
+                        </v-list-item-action>
+                    </v-list-item>
+                    <v-divider class="ml-15"></v-divider>
+                    </template>
+                </v-list>
+                <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#messagesScroller" :distance="0">
+                    <template slot="no-more"><span/></template>
+                    <template slot="no-results">No messages</template>
+                </infinite-loading>
             </pane>
             <pane max-size="70" size="20">
                 <MessageEdit :chatId="chatId"/>

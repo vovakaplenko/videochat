@@ -1,5 +1,5 @@
 <template>
-    <v-app>
+    <v-app style="height: 800px">
         <!-- https://vuetifyjs.com/en/components/application/ -->
         <v-navigation-drawer
                 left
@@ -71,24 +71,26 @@
         </v-app-bar>
 
 
-        <v-main>
-            <v-container>
-                <v-alert
-                        dismissible
-                        v-model="showAlert"
-                        prominent
-                        type="error"
-                >
-                    <v-row align="center">
-                        <v-col class="grow">{{lastError}}</v-col>
-                    </v-row>
-                </v-alert>
-                <LoginModal/>
-                <ChatEdit/>
-                <ChatDelete/>
-                <ChooseAvatar/>
-                <router-view/>
-            </v-container>
+        <v-main style="height: 100%">
+            <div id="messagesScroller" style="overflow-y: auto; height: 100%">
+                <v-container>
+                    <v-alert
+                            dismissible
+                            v-model="showAlert"
+                            prominent
+                            type="error"
+                    >
+                        <v-row align="center">
+                            <v-col class="grow">{{lastError}}</v-col>
+                        </v-row>
+                    </v-alert>
+                    <LoginModal/>
+                    <ChatEdit/>
+                    <ChatDelete/>
+                    <ChooseAvatar/>
+                    <router-view/>
+                </v-container>
+            </div>
         </v-main>
     </v-app>
 </template>
