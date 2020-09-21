@@ -72,7 +72,7 @@
 
 
         <v-main>
-            <v-container>
+            <v-container class="px-0">
                 <v-alert
                         dismissible
                         v-model="showAlert"
