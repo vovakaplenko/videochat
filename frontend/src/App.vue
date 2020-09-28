@@ -71,7 +71,7 @@
         </v-app-bar>
 
 
-        <v-main>
+        <v-main style="overflow-y: auto; height: 100vh">
             <v-container>
                 <v-alert
                         dismissible

@@ -1,11 +1,10 @@
 <template>
     <v-container class="ma-0 pa-0" id="chatViewContainer" fluid>
-        <splitpanes class="default-theme" horizontal style="height: 100%" @resized="onPanesResized">
+        <splitpanes class="default-theme" horizontal style="height: 100vh" @resized="onPanesResized">
             <pane v-if="isAllowedVideo()" id="videoBlock">
                 <ChatVideo :chatDto="chatDto"/>
             </pane>
             <pane max-size="90" size="70">
-                <div id="messagesScroller" style="overflow-y: auto; height: 100%">
                     <v-list>
                         <template v-for="(item, index) in items">
                         <v-list-item
@@ -30,11 +29,10 @@
                         <v-divider class="ml-15"></v-divider>
                         </template>
                     </v-list>
-                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#messagesScroller" :distance="0">
+                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" :distance="0">
                         <template slot="no-more"><span/></template>
                         <template slot="no-results">No messages</template>
                     </infinite-loading>
-                </div>
             </pane>
             <pane max-size="70" size="30">
                 <MessageEdit :chatId="chatId"/>
@@ -176,11 +174,11 @@
                 }
             },
             scrollDown() {
-                Vue.nextTick(()=>{
-                    var myDiv = document.getElementById("messagesScroller");
-                    console.log("myDiv.scrollTop", myDiv.scrollTop, "myDiv.scrollHeight", myDiv.scrollHeight);
-                    myDiv.scrollTop = myDiv.scrollHeight;
-                });
+                // Vue.nextTick(()=>{
+                //     var myDiv = document.getElementById("messagesScroller");
+                //     console.log("myDiv.scrollTop", myDiv.scrollTop, "myDiv.scrollHeight", myDiv.scrollHeight);
+                //     myDiv.scrollTop = myDiv.scrollHeight;
+                // });
             },
             getInfo() {
                 return axios.get(`/api/chat/${this.chatId}`).then(({ data }) => {
