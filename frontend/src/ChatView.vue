@@ -5,9 +5,8 @@
                 <ChatVideo :chatDto="chatDto"/>
             </pane>
             <pane max-size="90" size="70">
-                <div id="messagesScroller" style="overflow-y: auto; height: 100%">
-                    <v-list>
-                        <template v-for="(item, index) in items">
+                <v-list>
+                    <template v-for="(item, index) in items">
                         <v-list-item
                                 :key="item.id"
                                 dense
@@ -28,13 +27,12 @@
                             </v-list-item-action>
                         </v-list-item>
                         <v-divider class="ml-15"></v-divider>
-                        </template>
-                    </v-list>
-                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#messagesScroller" :distance="0">
+                    </template>
+                    <infinite-loading @infinite="infiniteHandler" :identifier="infiniteId" direction="top" force-use-infinite-wrapper="#appId" :distance="0">
                         <template slot="no-more"><span/></template>
                         <template slot="no-results">No messages</template>
                     </infinite-loading>
-                </div>
+                </v-list>
             </pane>
             <pane max-size="70" size="30">
                 <MessageEdit :chatId="chatId"/>
@@ -69,7 +67,7 @@
     import {mapGetters} from "vuex";
     import {GET_USER} from "./store";
     import { Splitpanes, Pane } from 'splitpanes'
-    import 'splitpanes/dist/splitpanes.css'
+    //import 'splitpanes/dist/splitpanes.css'
     import debounce from "lodash/debounce";
 
     export default {

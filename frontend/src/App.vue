@@ -1,5 +1,5 @@
 <template>
-    <v-app>
+    <v-app style="overflow-y: scroll; height: 100vh" id="appId">
         <!-- https://vuetifyjs.com/en/components/application/ -->
         <v-navigation-drawer
                 left
