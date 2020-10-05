@@ -1,7 +1,7 @@
 <template>
     <v-col cols="12" class="ma-0 pa-0" id="video-container">
-        <video id="localVideo" autoPlay playsInline :style="videoContainerStyle"></video>
         <video v-for="(item, index) in getProperParticipantIds()" :key="item" :id="getRemoteVideoId(item)" autoPlay playsInline :style="videoContainerStyle"></video>
+        <video id="localVideo" autoPlay playsInline :style="videoContainerStyle"></video>
     </v-col>
 </template>
 
@@ -92,7 +92,8 @@
             },
             initDevices() {
                 if (!navigator.mediaDevices) {
-                    console.log('There are no media devices');
+                    alert('There are no media devices');
+                    this.gotLocalStream(null);
                     return
                 }
                 navigator.mediaDevices.getUserMedia({
@@ -105,9 +106,11 @@
                     });
             },
             gotLocalStream(stream) {
-                console.log('Adding local stream.');
-                this.localStream = stream;
-                this.localVideo.srcObject = stream;
+                if (stream) {
+                    console.log('Adding local stream.');
+                    this.localStream = stream;
+                    this.localVideo.srcObject = stream;
+                }
 
                 bus.$emit(VIDEO_LOCAL_ESTABLISHED);
                 this.videoContainerStyle = this.calcVideoHeight();
@@ -119,37 +122,38 @@
             initializeRemoteConnectionElement(rcde) {
                 console.log('>>>>>> creating peer connection, localstream=', this.localStream, "from me to", rcde.userId);
                 const pc = this.createPeerConnection(rcde);
-                pc.addStream(this.localStream);
+
+                if (this.localStream) {
+                    pc.addStream(this.localStream);
+                }
                 rcde.peerConnection = pc;
             },
             initConnections(){
-                console.log('Initializing connections from local stream', this.localStream);
-                if (this.localStream) {
-                    // save this pc to array
-                    for (const rcde of this.remoteConnectionData) {
-                        this.initializeRemoteConnectionElement(rcde);
-                    }
-                    this.sendMessage({type: EVENT_HELLO});
-                } else {
+                if (!this.localStream) {
                     // TODO maybe retry
                     console.warn("localStream still not set -> we unable to initialize connections");
+                } else {
+                    console.log('Initializing connections from local stream', this.localStream);
                 }
+                // save this pc to array
+                for (const rcde of this.remoteConnectionData) {
+                    this.initializeRemoteConnectionElement(rcde);
+                }
+                this.sendMessage({type: EVENT_HELLO});
             },
 
             maybeStart(rcde){
-                if (this.localStream) {
-                    console.log('>>>>>> starting peer connection for', rcde.userId);
+                console.log('>>>>>> starting peer connection for', rcde.userId);
 
-                    this.stop(rcde);
-                    const pc = this.createPeerConnection(rcde);
-                    console.log('Created RTCPeerConnnection me -> user '+rcde.userId);
-                    pc.addStream(this.localStream);
-                    rcde.peerConnection = pc;
-                    this.doOffer(rcde);
-                } else {
+                this.stop(rcde);
+                const pc = this.createPeerConnection(rcde);
+                console.log('Created RTCPeerConnnection me -> user '+rcde.userId);
+                if (this.localStream) {
                     // TODO maybe retry
-                    console.warn("localStream still not set  -> we unable to send offer");
+                    pc.addStream(this.localStream);
                 }
+                rcde.peerConnection = pc;
+                this.doOffer(rcde);
             },
             createPeerConnection(rcde) {
                 const remoteVideo = rcde.remoteVideo;
