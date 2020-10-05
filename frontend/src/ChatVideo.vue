@@ -403,6 +403,7 @@
                     pc.setRemoteDescription(new RTCSessionDescription(message.value));
                     this.doAnswer(pcde);
                 } else if (message.type === EVENT_ANSWER && pc) {
+                    console.debug("setting RemoteDescription");
                     pc.setRemoteDescription(new RTCSessionDescription(message.value));
                 } else if (message.type === EVENT_CANDIDATE && pc) {
                     console.log("Handling remote ICE candidate for ", pcde.userId);
