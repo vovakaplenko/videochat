@@ -39,11 +39,15 @@
 
 
     // https://quilljs.com/docs/modules/toolbar/
-    const toolbarOptions = [
-        ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
-        [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-        ['clean']                                         // remove formatting button
-    ];
+    const toolbarOptions = {
+        container: [
+            ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+            [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+            ['emoji'],
+            ['clean']                                         // remove formatting button
+        ],
+        handlers: {'emoji': function() {}}
+    }
 
     export default {
         props:['chatId'],
@@ -56,6 +60,9 @@
                     // Some Quill options...
                     modules: {
                         toolbar: toolbarOptions,
+                        "emoji-toolbar": true,
+                        "emoji-textarea": true,
+                        "emoji-shortname": true,
                     }
                 }
             }
