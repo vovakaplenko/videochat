@@ -101,18 +101,18 @@ public class VkontakteOAuth2UserService extends AbstractOAuth2UserService implem
 
     @Override
     protected Optional<UserAccount> findByOauthId(String oauthId) {
-        return userAccountRepository.findByOauthIdentifiersVkontakteId(oauthId);
+        return userAccountRepository.findByOauth2IdentifiersVkontakteId(oauthId);
     }
 
     @Override
     protected void setOauthIdToPrincipal(UserAccountDetailsDTO principal, String oauthId) {
-        principal.getOauthIdentifiers().setVkontakteId(oauthId);
+        principal.getoAuth2Identifiers().setVkontakteId(oauthId);
     }
 
     @Override
     protected void setOauthIdToEntity(Long id, String oauthId) {
         UserAccount userAccount = userAccountRepository.findById(id).orElseThrow();
-        userAccount.getOauthIdentifiers().setVkontakteId(oauthId);
+        userAccount.getOauth2Identifiers().setVkontakteId(oauthId);
         userAccount = userAccountRepository.save(userAccount);
     }
 

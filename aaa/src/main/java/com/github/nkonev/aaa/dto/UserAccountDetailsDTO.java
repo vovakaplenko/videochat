@@ -43,7 +43,7 @@ public class UserAccountDetailsDTO extends UserAccountDTO implements UserDetails
             Collection<GrantedAuthority> roles,
             String email,
             LocalDateTime lastLoginDateTime,
-            OauthIdentifiersDTO oauthIdentifiers
+            OAuth2IdentifiersDTO oauthIdentifiers
     ) {
         super(id, login, avatar, lastLoginDateTime, oauthIdentifiers);
         this.password = password;

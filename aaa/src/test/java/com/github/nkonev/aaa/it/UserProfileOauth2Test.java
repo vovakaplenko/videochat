@@ -3,7 +3,6 @@ package com.github.nkonev.aaa.it;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Selenide;
 import com.github.nkonev.aaa.AbstractSeleniumRunner;
-import com.github.nkonev.aaa.CommonTestConstants;
 import com.github.nkonev.aaa.Constants;
 import com.github.nkonev.aaa.FailoverUtils;
 import com.github.nkonev.aaa.config.webdriver.Browser;
@@ -96,16 +95,16 @@ public class UserProfileOauth2Test extends AbstractSeleniumRunner {
         Long facebookLoggedId = userAccount.getId();
         Assertions.assertNotNull(facebookLoggedId);
         Assertions.assertEquals(facebookLogin, userAccount.getUsername());
-        String facebookId = userAccount.getOauthIdentifiers().getFacebookId();
+        String facebookId = userAccount.getOauth2Identifiers().getFacebookId();
         Assertions.assertNotNull(facebookId);
-        Assertions.assertNull(userAccount.getOauthIdentifiers().getVkontakteId());
+        Assertions.assertNull(userAccount.getOauth2Identifiers().getVkontakteId());
         long count = userAccountRepository.count();
 
         clickVkontakte();
         UserAccount userAccountFbAndVk = FailoverUtils.retry(10, () -> userAccountRepository.findByUsername(facebookLogin).orElseThrow());
-        String userAccountFbAndVkFacebookId = userAccountFbAndVk.getOauthIdentifiers().getFacebookId();
+        String userAccountFbAndVkFacebookId = userAccountFbAndVk.getOauth2Identifiers().getFacebookId();
         Assertions.assertNotNull(userAccountFbAndVkFacebookId);
-        Assertions.assertNotNull(userAccountFbAndVk.getOauthIdentifiers().getVkontakteId());
+        Assertions.assertNotNull(userAccountFbAndVk.getOauth2Identifiers().getVkontakteId());
         long countAfterVk = userAccountRepository.count();
 
 
@@ -184,7 +183,7 @@ public class UserProfileOauth2Test extends AbstractSeleniumRunner {
         Selenide.refresh();
         // assert that he has facebook id
         UserAccount userAccountAfterBind = userAccountRepository.findByUsername(login600).orElseThrow();
-        Assertions.assertNotNull(userAccountAfterBind.getOauthIdentifiers().getFacebookId());
+        Assertions.assertNotNull(userAccountAfterBind.getOauth2Identifiers().getFacebookId());
 
         // login as another user to vk - vk id #1 save to database
         {
@@ -219,7 +218,7 @@ public class UserProfileOauth2Test extends AbstractSeleniumRunner {
         clickFacebook();
         UserAccount userAccountAfterBindFacebook = userAccountRepository.findByUsername(loginModal600.login).orElseThrow();
         // assert facebook is bound - check database
-        Assertions.assertNotNull(userAccountAfterBindFacebook.getOauthIdentifiers().getFacebookId());
+        Assertions.assertNotNull(userAccountAfterBindFacebook.getOauth2Identifiers().getFacebookId());
 
         // logout
         clickLogout();
@@ -238,6 +237,6 @@ public class UserProfileOauth2Test extends AbstractSeleniumRunner {
 
         // assert facebook is unbound - check database
         UserAccount userAccountAfterDeleteFacebook = userAccountRepository.findByUsername(loginModal600.login).orElseThrow();
-        Assertions.assertNull(userAccountAfterDeleteFacebook.getOauthIdentifiers().getFacebookId());
+        Assertions.assertNull(userAccountAfterDeleteFacebook.getOauth2Identifiers().getFacebookId());
     }
 }

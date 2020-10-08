@@ -24,7 +24,7 @@
         <v-card-title class="title pb-0 pt-1">Bound OAuth2 providers</v-card-title>
         <v-card-actions class="mx-2">
             <v-chip
-                v-if="currentUser.oauthIdentifiers.vkontakteId"
+                v-if="currentUser.oAuth2Identifiers.vkontakteId"
                 min-width="80px"
                 label
                 close
@@ -37,7 +37,7 @@
             </v-chip>
 
             <v-chip
-                v-if="currentUser.oauthIdentifiers.facebookId"
+                v-if="currentUser.oAuth2Identifiers.facebookId"
                 min-width="80px"
                 label
                 close
@@ -53,11 +53,11 @@
         <v-divider class="mx-4"></v-divider>
         <v-card-title class="title pb-0 pt-1">Not bound OAuth2 providers</v-card-title>
         <v-card-actions class="mx-2">
-            <v-btn v-if="!currentUser.oauthIdentifiers.vkontakteId" @click="submitOauthVkontakte" class="c-btn-vk"
+            <v-btn v-if="!currentUser.oAuth2Identifiers.vkontakteId" @click="submitOauthVkontakte" class="c-btn-vk"
                    min-width="80px">
                 <font-awesome-icon :icon="{ prefix: 'fab', iconName: 'vk'}" :size="'2x'"></font-awesome-icon>
             </v-btn>
-            <v-btn v-if="!currentUser.oauthIdentifiers.facebookId" @click="submitOauthFacebook" class="c-btn-fb"
+            <v-btn v-if="!currentUser.oAuth2Identifiers.facebookId" @click="submitOauthFacebook" class="c-btn-fb"
                    min-width="80px">
                 <font-awesome-icon :icon="{ prefix: 'fab', iconName: 'facebook' }" :size="'2x'"></font-awesome-icon>
             </v-btn>

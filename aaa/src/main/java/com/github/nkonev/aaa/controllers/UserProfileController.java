@@ -2,13 +2,11 @@ package com.github.nkonev.aaa.controllers;
 
 import com.github.nkonev.aaa.Constants;
 import com.github.nkonev.aaa.converter.UserAccountConverter;
-import com.github.nkonev.aaa.dto.EditUserDTO;
 import com.github.nkonev.aaa.dto.UserAccountDTO;
 import com.github.nkonev.aaa.dto.UserAccountDetailsDTO;
 import com.github.nkonev.aaa.dto.UserRole;
 import com.github.nkonev.aaa.entity.jdbc.UserAccount;
 import com.github.nkonev.aaa.exception.BadRequestException;
-import com.github.nkonev.aaa.exception.UserAlreadyPresentException;
 import com.github.nkonev.aaa.repository.jdbc.UserAccountRepository;
 import com.github.nkonev.aaa.security.AaaUserDetailsService;
 import com.github.nkonev.aaa.services.NotifierService;
@@ -297,7 +295,7 @@ public class UserProfileController {
     public void selfDeleteBindingFacebook(@AuthenticationPrincipal UserAccountDetailsDTO userAccountDetailsDTO){
         long userId = userAccountDetailsDTO.getId();
         UserAccount userAccount = userAccountRepository.findById(userId).orElseThrow();
-        userAccount.getOauthIdentifiers().setFacebookId(null);
+        userAccount.getOauth2Identifiers().setFacebookId(null);
         userAccount = userAccountRepository.save(userAccount);
         aaaUserDetailsService.refreshUserDetails(userAccount);
     }
@@ -307,7 +305,7 @@ public class UserProfileController {
     public void selfDeleteBindingVkontakte(@AuthenticationPrincipal UserAccountDetailsDTO userAccountDetailsDTO){
         long userId = userAccountDetailsDTO.getId();
         UserAccount userAccount = userAccountRepository.findById(userId).orElseThrow();
-        userAccount.getOauthIdentifiers().setVkontakteId(null);
+        userAccount.getOauth2Identifiers().setVkontakteId(null);
         userAccount = userAccountRepository.save(userAccount);
         aaaUserDetailsService.refreshUserDetails(userAccount);
     }

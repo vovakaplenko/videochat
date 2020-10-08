@@ -1,9 +1,9 @@
 package com.github.nkonev.aaa.security;
 
 import com.github.nkonev.aaa.converter.UserAccountConverter;
-import com.github.nkonev.aaa.repository.jdbc.UserAccountRepository;
 import com.github.nkonev.aaa.dto.UserAccountDetailsDTO;
 import com.github.nkonev.aaa.entity.jdbc.UserAccount;
+import com.github.nkonev.aaa.repository.jdbc.UserAccountRepository;
 import com.github.nkonev.aaa.security.checks.AaaPostAuthenticationChecks;
 import com.github.nkonev.aaa.security.checks.AaaPreAuthenticationChecks;
 import org.slf4j.Logger;
@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,14 +26,14 @@ import java.util.Optional;
 @Transactional
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 @Component
-public class FacebookOAuth2UserService extends AbstractOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+public class GoogleOAuth2UserService extends AbstractOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FacebookOAuth2UserService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuth2UserService.class);
 
     @Autowired
     private UserAccountRepository userAccountRepository;
 
-    public static final String LOGIN_PREFIX = OAuth2Providers.FACEBOOK + "_";
+    public static final String LOGIN_PREFIX = OAuth2Providers.GOOGLE + "_";
 
     @Autowired
     private AaaPreAuthenticationChecks aaaPreAuthenticationChecks;
@@ -46,16 +47,16 @@ public class FacebookOAuth2UserService extends AbstractOAuth2UserService impleme
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
         var map = oAuth2User.getAttributes();
-        String facebookId = getId(map);
-        Assert.notNull(facebookId, "facebookId cannot be null");
+        String googleId = getId(map);
+        Assert.notNull(googleId, "googleId cannot be null");
 
 
-        UserAccountDetailsDTO resultPrincipal = mergeOauthIdToExistsUser(facebookId);
+        UserAccountDetailsDTO resultPrincipal = mergeOauthIdToExistsUser(googleId);
         if (resultPrincipal != null) {
             // ok
         } else {
             String login = getLogin(map);
-            resultPrincipal = createOrGetExistsUser(facebookId, login, map);
+            resultPrincipal = createOrGetExistsUser(googleId, login, map);
         }
 
         aaaPreAuthenticationChecks.check(resultPrincipal);
@@ -87,12 +88,12 @@ public class FacebookOAuth2UserService extends AbstractOAuth2UserService impleme
 
     @Override
     protected String getOauthName() {
-        return OAuth2Providers.FACEBOOK;
+        return OAuth2Providers.GOOGLE;
     }
 
     @Override
     protected Optional<UserAccount> findByOauthId(String oauthId) {
-        return userAccountRepository.findByOauth2IdentifiersFacebookId(oauthId);
+        return userAccountRepository.findByOauth2IdentifiersGoogleId(oauthId);
     }
 
     @Override
