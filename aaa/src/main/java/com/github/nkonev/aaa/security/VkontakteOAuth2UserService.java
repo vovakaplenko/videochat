@@ -38,10 +38,9 @@ public class VkontakteOAuth2UserService extends AbstractOAuth2UserService implem
     @Autowired
     private AaaPostAuthenticationChecks aaaPostAuthenticationChecks;
 
-
     private static final Logger LOGGER = LoggerFactory.getLogger(VkontakteOAuth2UserService.class);
 
-    public static final String LOGIN_PREFIX = "vkontakte_";
+    public static final String LOGIN_PREFIX = OAuth2Providers.VKONTAKTE + "_";
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -97,7 +96,7 @@ public class VkontakteOAuth2UserService extends AbstractOAuth2UserService implem
 
     @Override
     protected String getOauthName() {
-        return "vkontakte";
+        return OAuth2Providers.VKONTAKTE;
     }
 
     @Override

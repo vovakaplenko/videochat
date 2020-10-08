@@ -32,7 +32,7 @@ public class FacebookOAuth2UserService extends AbstractOAuth2UserService impleme
     @Autowired
     private UserAccountRepository userAccountRepository;
 
-    public static final String LOGIN_PREFIX = "facebook_";
+    public static final String LOGIN_PREFIX = OAuth2Providers.FACEBOOK + "_";
 
     @Autowired
     private AaaPreAuthenticationChecks aaaPreAuthenticationChecks;
@@ -87,7 +87,7 @@ public class FacebookOAuth2UserService extends AbstractOAuth2UserService impleme
 
     @Override
     protected String getOauthName() {
-        return "facebook";
+        return OAuth2Providers.FACEBOOK;
     }
 
     @Override
