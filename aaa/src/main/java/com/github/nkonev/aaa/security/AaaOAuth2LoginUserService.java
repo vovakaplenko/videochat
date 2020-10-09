@@ -8,7 +8,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BlogOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+public class AaaOAuth2LoginUserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     @Autowired
     private FacebookOAuth2UserService facebookOAuth2UserService;

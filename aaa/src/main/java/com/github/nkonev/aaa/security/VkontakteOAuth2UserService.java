@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -37,6 +38,8 @@ public class VkontakteOAuth2UserService extends AbstractOAuth2UserService implem
 
     @Autowired
     private AaaPostAuthenticationChecks aaaPostAuthenticationChecks;
+
+    final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VkontakteOAuth2UserService.class);
 
@@ -120,7 +123,7 @@ public class VkontakteOAuth2UserService extends AbstractOAuth2UserService implem
     protected UserAccount insertEntity(String oauthId, String login, Map<String, Object> oauthResourceServerResponse) {
         UserAccount userAccount = UserAccountConverter.buildUserAccountEntityForVkontakteInsert(oauthId, login);
         userAccount = userAccountRepository.save(userAccount);
-        LOGGER.info("Created vkontakte user id={} login='{}'", oauthId, login);
+        LOGGER.info("Created {} user id={} login='{}'", getOauthName(), oauthId, login);
 
         return userAccount;
 

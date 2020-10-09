@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -39,6 +40,8 @@ public class FacebookOAuth2UserService extends AbstractOAuth2UserService impleme
 
     @Autowired
     private AaaPostAuthenticationChecks aaaPostAuthenticationChecks;
+
+    final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
 
 
     @Override
@@ -112,7 +115,7 @@ public class FacebookOAuth2UserService extends AbstractOAuth2UserService impleme
         String maybeImageUrl = getAvatarUrl(map);
         UserAccount userAccount = UserAccountConverter.buildUserAccountEntityForFacebookInsert(oauthId, login, maybeImageUrl);
         userAccount = userAccountRepository.save(userAccount);
-        LOGGER.info("Created facebook user id={} login='{}'", oauthId, login);
+        LOGGER.info("Created {} user id={} login='{}'", getOauthName(), oauthId, login);
 
         return userAccount;
     }

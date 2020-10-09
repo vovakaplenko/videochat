@@ -11,9 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +29,7 @@ import java.util.Optional;
 @Transactional
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 @Component
-public class GoogleOAuth2UserService extends AbstractOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+public class GoogleOAuth2UserService extends AbstractOAuth2UserService implements OAuth2UserService<OidcUserRequest, OidcUser> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuth2UserService.class);
 
@@ -41,15 +44,15 @@ public class GoogleOAuth2UserService extends AbstractOAuth2UserService implement
     @Autowired
     private AaaPostAuthenticationChecks aaaPostAuthenticationChecks;
 
+    final OidcUserService oidcUserService = new OidcUserService();
 
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = delegate.loadUser(userRequest);
+    public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+        OidcUser oAuth2User = oidcUserService.loadUser(userRequest);
 
         var map = oAuth2User.getAttributes();
         String googleId = getId(map);
         Assert.notNull(googleId, "googleId cannot be null");
-
 
         UserAccountDetailsDTO resultPrincipal = mergeOauthIdToExistsUser(googleId);
         if (resultPrincipal != null) {
@@ -66,19 +69,19 @@ public class GoogleOAuth2UserService extends AbstractOAuth2UserService implement
 
 
     private String getAvatarUrl(Map<String, Object> map){
-        return null;
+        return (String) map.get("picture");
     }
 
     private String getLogin(Map<String, Object> map) {
         String login = (String) map.get("name");
-        Assert.hasLength(login, "facebook name cannot be null");
+        Assert.hasLength(login, "google name cannot be null");
         login = login.trim();
         login = login.replaceAll(" +", " ");
         return login;
     }
 
     private String getId(Map<String, Object> map) {
-        return (String) map.get("id");
+        return (String) map.get("sub");
     }
 
     @Override
@@ -98,22 +101,22 @@ public class GoogleOAuth2UserService extends AbstractOAuth2UserService implement
 
     @Override
     protected void setOauthIdToPrincipal(UserAccountDetailsDTO principal, String oauthId) {
-        principal.getoAuth2Identifiers().setFacebookId(oauthId);
+        principal.getoAuth2Identifiers().setGoogleId(oauthId);
     }
 
     @Override
     protected void setOauthIdToEntity(Long id, String oauthId) {
         UserAccount userAccount = userAccountRepository.findById(id).orElseThrow();
-        userAccount.getOauth2Identifiers().setFacebookId(oauthId);
+        userAccount.getOauth2Identifiers().setGoogleId(oauthId);
         userAccount = userAccountRepository.save(userAccount);
     }
 
     @Override
     protected UserAccount insertEntity(String oauthId, String login, Map<String, Object> map) {
         String maybeImageUrl = getAvatarUrl(map);
-        UserAccount userAccount = UserAccountConverter.buildUserAccountEntityForFacebookInsert(oauthId, login, maybeImageUrl);
+        UserAccount userAccount = UserAccountConverter.buildUserAccountEntityForGoogleInsert(oauthId, login, maybeImageUrl);
         userAccount = userAccountRepository.save(userAccount);
-        LOGGER.info("Created facebook user id={} login='{}'", oauthId, login);
+        LOGGER.info("Created {} user id={} login='{}'", getOauthName(), oauthId, login);
 
         return userAccount;
     }
