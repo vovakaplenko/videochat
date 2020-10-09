@@ -52,7 +52,6 @@
     import {mapGetters} from "vuex";
     import {GET_USER} from "./store";
     import { Splitpanes, Pane } from 'splitpanes'
-    import 'splitpanes/dist/splitpanes.css'
     import {getCorrectUserAvatar} from "./utils";
     import MessageItem from "./MessageItem";
 
@@ -259,4 +258,32 @@
         background  white
     }
 
+</style>
+
+<style lang="stylus">
+//@import "~splitpanes/dist/splitpanes.css"
+.splitpanes {
+    background-color: #f2f2f2;
+
+    //&__pane {
+    //    justify-content: center;
+    //    align-items: center;
+    //    display: flex;
+    //}
+
+    &__splitter {background-color: #ccc;position: relative;}
+
+    &__splitter:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        transition: 0.4s;
+    }
+    &--vertical > &__splitter:before {left: -30px;right: -30px;}
+    &--horizontal > &__splitter:before {top: -30px;bottom: -30px;}
+    &__splitter:hover:before {background-color: rgba(255, 0, 0, 0.3);}
+}
 </style>
