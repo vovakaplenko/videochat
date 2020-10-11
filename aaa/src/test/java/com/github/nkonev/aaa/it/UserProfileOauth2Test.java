@@ -8,6 +8,7 @@ import com.github.nkonev.aaa.FailoverUtils;
 import com.github.nkonev.aaa.config.webdriver.Browser;
 import com.github.nkonev.aaa.config.webdriver.SeleniumProperties;
 import com.github.nkonev.aaa.entity.jdbc.UserAccount;
+import com.github.nkonev.aaa.security.OAuth2Providers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -226,9 +227,11 @@ public class UserProfileOauth2Test extends AbstractSeleniumRunner {
         // login again
         SessionHolder userAliceSession = login(loginModal600.login, loginModal600.password);
 
+        final String FACEBOOK = "/" + OAuth2Providers.FACEBOOK;
+
         // unbind facebook
         RequestEntity myPostsRequest1 = RequestEntity
-                .delete(new URI(urlWithContextPath()+ Constants.Urls.API+Constants.Urls.PROFILE+Constants.Urls.FACEBOOK))
+                .delete(new URI(urlWithContextPath()+ Constants.Urls.API+Constants.Urls.PROFILE+FACEBOOK))
                 .header(HEADER_XSRF_TOKEN, userAliceSession.newXsrf)
                 .header(COOKIE, userAliceSession.getCookiesArray())
                 .build();

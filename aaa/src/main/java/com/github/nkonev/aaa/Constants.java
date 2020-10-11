@@ -29,8 +29,6 @@ public class Constants {
         public static final String SESSIONS = "/sessions";
         public static final String ROLE = "/role";
 
-        public static final String FACEBOOK = "/" + OAuth2Providers.FACEBOOK;
-        public static final String VKONTAKTE = "/" + OAuth2Providers.VKONTAKTE;
     }
 
     public static class Headers {
