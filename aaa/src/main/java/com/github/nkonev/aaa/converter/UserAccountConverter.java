@@ -70,7 +70,7 @@ public class UserAccountConverter {
                 userAccount.getAvatar(),
                 userAccount.getEmail(),
                 lastLoginDateTime,
-                userAccount.getoAuth2Identifiers(),
+                userAccount.getOauth2Identifiers(),
                 convertRoles2Enum(userAccount.getRoles()),
                 expiresAt
         );
@@ -143,7 +143,7 @@ public class UserAccountConverter {
                 userAccount.getUsername(),
                 userAccount.getAvatar(),
                 userAccount.getLastLoginDateTime(),
-                userAccount.getoAuth2Identifiers()
+                userAccount.getOauth2Identifiers()
         );
     }
 
