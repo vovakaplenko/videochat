@@ -5,7 +5,7 @@
             <p class="video-container-element-caption">{{ currentUser.login }}</p>
         </div>
         <div class="video-container-element" v-for="(item, index) in properParticipants" :key="item.id">
-            <video :id="getRemoteVideoId(item.id)" autoPlay playsInline :class="otherParticipantsClass" :poster="getAvatar(item)"></video>
+            <video :id="getRemoteVideoId(item.id)" autoPlay playsInline :class="otherParticipantsClass" :poster="item.avatar"></video>
             <p class="video-container-element-caption">{{ getLogin(item) }}</p>
         </div>
     </v-col>
@@ -16,12 +16,14 @@
     import {mapGetters} from "vuex";
     import {GET_USER} from "./store";
     import bus, {
-        CHANGE_PHONE_BUTTON,
+        CHANGE_PHONE_BUTTON, USER_PROFILE_CHANGED,
         VIDEO_LOCAL_ESTABLISHED
     } from "./bus";
     import {phoneFactory} from "./changeTitle";
     import axios from "axios";
     import Vue from 'vue'
+    import {getCorrectUserAvatar} from "./utils";
+    import {replaceInArray} from "./InfinityListMixin";
 
     const EVENT_CANDIDATE = 'candidate';
     const EVENT_HELLO = 'hello';
@@ -353,6 +355,11 @@
             getAvatar(participant) {
                 return participant.avatar;
             },
+            onUserProfileChanged(user) {
+                const patchedUser = user;
+                patchedUser.avatar = getCorrectUserAvatar(user.avatar);
+                replaceInArray(this.chatDto.participants, patchedUser);
+            }
         },
 
         mounted() {
@@ -421,6 +428,8 @@
                 }
             });
 
+            bus.$on(USER_PROFILE_CHANGED, this.onUserProfileChanged);
+
             this.getWebRtcConfiguration();
         },
 
@@ -436,6 +445,8 @@
             this.localStream = null;
             this.localVideo = null;
             this.remoteConnectionData = [];
+
+            bus.$off(USER_PROFILE_CHANGED, this.onUserProfileChanged);
         },
 
         watch: {
