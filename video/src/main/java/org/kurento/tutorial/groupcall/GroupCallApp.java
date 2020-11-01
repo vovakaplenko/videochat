@@ -15,7 +15,7 @@
  *
  */
 
-package org.kurento.tutorial.one2manycall;
+package org.kurento.tutorial.groupcall;
 
 import org.kurento.client.KurentoClient;
 import org.springframework.boot.SpringApplication;
@@ -27,17 +27,26 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
 /**
- * Video call 1 to N demo (main).
  *
- * @author Boni Garcia (bgarcia@gsyc.es)
- * @since 5.0.0
+ * @author Ivan Gracia (izanmail@gmail.com)
+ * @since 4.3.1
  */
 @SpringBootApplication
 @EnableWebSocket
-public class One2ManyCallApp implements WebSocketConfigurer {
+public class GroupCallApp implements WebSocketConfigurer {
 
   @Bean
-  public CallHandler callHandler() {
+  public UserRegistry registry() {
+    return new UserRegistry();
+  }
+
+  @Bean
+  public RoomManager roomManager() {
+    return new RoomManager();
+  }
+
+  @Bean
+  public CallHandler groupCallHandler() {
     return new CallHandler();
   }
 
@@ -53,13 +62,12 @@ public class One2ManyCallApp implements WebSocketConfigurer {
     return container;
   }
 
+  public static void main(String[] args) throws Exception {
+    SpringApplication.run(GroupCallApp.class, args);
+  }
+
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-    registry.addHandler(callHandler(), "/call");
+    registry.addHandler(groupCallHandler(), "/groupcall");
   }
-
-  public static void main(String[] args) throws Exception {
-    SpringApplication.run(One2ManyCallApp.class, args);
-  }
-
 }
