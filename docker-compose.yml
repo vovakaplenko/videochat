@@ -119,7 +119,7 @@ services:
         max-file: "1"
 
   kurento:
-    image: kurento/kurento-media-server:6.14.0
+    image: kurento/kurento-media-server:6.15.0
     hostname: kurento
     restart: unless-stopped
     network_mode: host
