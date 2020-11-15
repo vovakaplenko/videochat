@@ -15,7 +15,7 @@
  *
  */
 
-var ws = new WebSocket('wss://' + location.host + '/groupcall');
+var ws = new WebSocket(((location.protocol === "https:") ? "wss://" : "ws://") + location.host + '/groupcall');
 var participants = {};
 var name;
 
