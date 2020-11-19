@@ -19,6 +19,7 @@ package org.kurento.tutorial.groupcall;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -52,7 +53,7 @@ public class UserSession implements Closeable {
 
   private final String roomName;
   private final WebRtcEndpoint outgoingMedia;
-  private final ConcurrentMap<String, WebRtcEndpoint> incomingMedia = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, WebRtcEndpoint> incomingMediaMap = new ConcurrentHashMap<>();
 
   public UserSession(final String name, String roomName, final WebSocketSession session,
       MediaPipeline pipeline) {
@@ -90,8 +91,8 @@ public class UserSession implements Closeable {
     return name;
   }
 
-  public WebSocketSession getSession() {
-    return session;
+  public String getSessionId() {
+    return Optional.ofNullable(session).map(WebSocketSession::getId).orElse(null);
   }
 
   /**
@@ -128,7 +129,7 @@ public class UserSession implements Closeable {
 
     log.debug("PARTICIPANT {}: receiving video from {}", this.name, sender.getName());
 
-    WebRtcEndpoint incoming = incomingMedia.get(sender.getName());
+    WebRtcEndpoint incoming = incomingMediaMap.get(sender.getName());
     if (incoming == null) {
       log.debug("PARTICIPANT {}: creating new endpoint for {}", this.name, sender.getName());
       incoming = new WebRtcEndpoint.Builder(pipeline).build();
@@ -151,7 +152,7 @@ public class UserSession implements Closeable {
         }
       });
 
-      incomingMedia.put(sender.getName(), incoming);
+      incomingMediaMap.put(sender.getName(), incoming);
     }
 
     log.debug("PARTICIPANT {}: obtained endpoint for {}", this.name, sender.getName());
@@ -166,7 +167,7 @@ public class UserSession implements Closeable {
 
   public void cancelVideoFrom(final String senderName) {
     log.debug("PARTICIPANT {}: canceling video reception from {}", this.name, senderName);
-    final WebRtcEndpoint incoming = incomingMedia.remove(senderName);
+    final WebRtcEndpoint incoming = incomingMediaMap.remove(senderName);
 
     log.debug("PARTICIPANT {}: removing endpoint for {}", this.name, senderName);
     incoming.release(new Continuation<Void>() {
@@ -187,11 +188,11 @@ public class UserSession implements Closeable {
   @Override
   public void close() throws IOException {
     log.debug("PARTICIPANT {}: Releasing resources", this.name);
-    for (final String remoteParticipantName : incomingMedia.keySet()) {
+    for (final String remoteParticipantName : incomingMediaMap.keySet()) {
 
       log.trace("PARTICIPANT {}: Released incoming EP for {}", this.name, remoteParticipantName);
 
-      final WebRtcEndpoint ep = this.incomingMedia.get(remoteParticipantName);
+      final WebRtcEndpoint ep = this.incomingMediaMap.get(remoteParticipantName);
 
       ep.release(new Continuation<Void>() {
 
@@ -234,7 +235,7 @@ public class UserSession implements Closeable {
     if (this.name.compareTo(name) == 0) {
       outgoingMedia.addIceCandidate(candidate);
     } else {
-      WebRtcEndpoint webRtc = incomingMedia.get(name);
+      WebRtcEndpoint webRtc = incomingMediaMap.get(name);
       if (webRtc != null) {
         webRtc.addIceCandidate(candidate);
       }

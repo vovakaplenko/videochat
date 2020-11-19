@@ -2,6 +2,7 @@ module nkonev.name/chat
 
 require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.0
+	github.com/SpalkLtd/kurento-go v0.0.0-20200812223812-80c0645ddadf // indirect
 	github.com/araddon/dateparse v0.0.0-20200409225146-d820a6159ab1
 	github.com/centrifugal/centrifuge v0.9.1
 	github.com/centrifugal/protocol v0.3.3

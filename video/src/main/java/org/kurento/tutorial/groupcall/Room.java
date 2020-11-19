@@ -66,20 +66,20 @@ public class Room implements Closeable {
 
   public UserSession join(String userName, WebSocketSession session) throws IOException {
     log.info("ROOM {}: adding participant {}", this.name, userName);
-    final UserSession participant = new UserSession(userName, this.name, session, this.pipeline);
-    joinRoom(participant);
+    final UserSession participant = new UserSession(userName, this.name, session/*session id = websocket*/, this.pipeline/*pipeline id*/);
+    sendJoinRoomMessage(participant); // послать мультикастом сообщение
     participants.put(participant.getName(), participant);
-    sendParticipantNames(participant);
+    sendParticipantNamesTo(participant);
     return participant;
   }
 
   public void leave(UserSession user) throws IOException {
     log.debug("PARTICIPANT {}: Leaving room {}", user.getName(), this.name);
-    this.removeParticipant(user.getName());
+    this.removeParticipant(user.getName()); // послать мультикастом сообщение
     user.close();
   }
 
-  private Collection<String> joinRoom(UserSession newParticipant) throws IOException {
+  private Collection<String> sendJoinRoomMessage(UserSession newParticipant) throws IOException {
     final JsonObject newParticipantMsg = new JsonObject();
     newParticipantMsg.addProperty("id", "newParticipantArrived");
     newParticipantMsg.addProperty("name", newParticipant.getName());
@@ -125,7 +125,7 @@ public class Room implements Closeable {
 
   }
 
-  public void sendParticipantNames(UserSession user) throws IOException {
+  private void sendParticipantNamesTo(UserSession user) throws IOException {
 
     final JsonArray participantsArray = new JsonArray();
     for (final UserSession participant : this.getParticipants()) {

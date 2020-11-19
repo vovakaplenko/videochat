@@ -31,7 +31,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
  * @author Ivan Gracia (izanmail@gmail.com)
  * @since 4.3.1
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"name.nkonev", "org.kurento.tutorial.groupcall"})
 @EnableWebSocket
 public class GroupCallApp implements WebSocketConfigurer {
 

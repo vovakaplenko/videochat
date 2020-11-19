@@ -37,7 +37,7 @@ public class UserRegistry {
 
   public void register(UserSession user) {
     usersByName.put(user.getName(), user);
-    usersBySessionId.put(user.getSession().getId(), user);
+    usersBySessionId.put(user.getSessionId(), user);
   }
 
   public UserSession getByName(String name) {

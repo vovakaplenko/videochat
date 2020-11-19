@@ -51,6 +51,15 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-websocket</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.kurento</groupId>
+			<artifactId>kurento-client</artifactId>
+			<version>${version.kurento-java}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
 
 		<!-- WebJars -->
 		<dependency>
@@ -84,12 +93,6 @@
 			<version>${webjars.webrtc-adapter.version}</version>
 		</dependency>
 
-		<!-- Kurento -->
-		<dependency>
-			<groupId>org.kurento</groupId>
-			<artifactId>kurento-client</artifactId>
-			<version>${version.kurento-java}</version>
-		</dependency>
 		<dependency>
 			<groupId>org.kurento</groupId>
 			<artifactId>kurento-utils-js</artifactId>
