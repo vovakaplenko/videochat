@@ -14,7 +14,4 @@ public class ChatRequestService {
 
     }
 
-    public void sendToWebsocketForSessionMulticast(Long roomId, JsonObject data) {
-
-    }
 }

@@ -10,15 +10,9 @@ import org.springframework.context.annotation.Bean;
 public class GroupCallApp {
 
   @Bean
-  public RoomManager roomManager() {
-    return new RoomManager();
-  }
-
-  @Bean
   public KurentoClient kurentoClient() {
     return KurentoClient.create();
   }
-
 
   public static void main(String[] args) throws Exception {
     SpringApplication.run(GroupCallApp.class, args);
