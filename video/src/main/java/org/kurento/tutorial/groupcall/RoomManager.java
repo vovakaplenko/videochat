@@ -36,26 +36,29 @@ public class RoomManager {
   @Autowired
   private KurentoClient kurento;
 
-  private final ConcurrentMap<String, Room> rooms = new ConcurrentHashMap<>();
+  @Autowired
+  private ChatRequestService chatRequestService;
+
+  private final ConcurrentMap<Long, Room> rooms = new ConcurrentHashMap<>();
 
   /**
    * Looks for a room in the active room list.
    *
-   * @param roomName
+   * @param roomId
    *          the name of the room
    * @return the room if it was already created, or a new one if it is the first time this room is
    *         accessed
    */
-  public Room getRoom(String roomName) {
-    log.debug("Searching for room {}", roomName);
-    Room room = rooms.get(roomName);
+  public Room getRoom(Long roomId) {
+    log.debug("Searching for room {}", roomId);
+    Room room = rooms.get(roomId);
 
     if (room == null) {
-      log.debug("Room {} not existent. Will create now!", roomName);
-      room = new Room(roomName, kurento.createMediaPipeline());
-      rooms.put(roomName, room);
+      log.debug("Room {} not existent. Will create now!", roomId);
+      room = new Room(roomId, kurento.createMediaPipeline(), chatRequestService);
+      rooms.put(roomId, room);
     }
-    log.debug("Room {} found!", roomName);
+    log.debug("Room {} found!", roomId);
     return room;
   }
 

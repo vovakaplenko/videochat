@@ -8,22 +8,11 @@
 	<version>0.0.0</version>
 	<packaging>jar</packaging>
 
-	<!-- Project-level information -->
-	<name>Kurento Java Tutorial - One2Many Call</name>
-	<description>WebRTC one to many video call</description>
-
-	<!-- Project configuration -->
+	<name>Kurento Adapter</name>
 
 	<properties>
 		<spring.boot.version>2.4.0</spring.boot.version>
-		<webjars-locator.version>0.36</webjars-locator.version>
-		<webjars.jquery.version>1.12.3</webjars.jquery.version>
-		<webjars.bootstrap.version>3.3.6</webjars.bootstrap.version>
-		<webjars.demo-console.version>1.5.1</webjars.demo-console.version>
-		<webjars.ekko-lightbox.version>4.0.2</webjars.ekko-lightbox.version>
-		<webjars.webrtc-adapter.version>6.4.0</webjars.webrtc-adapter.version>
 		<version.kurento-java>6.15.0</version.kurento-java>
-		<version.kurento-utils-js>6.13.1</version.kurento-utils-js>
 		<maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
 		<java.version>11</java.version>
 	</properties>
@@ -48,52 +37,13 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-websocket</artifactId>
-		</dependency>
-
-		<!-- WebJars -->
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>webjars-locator</artifactId>
-			<version>${webjars-locator.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>jquery</artifactId>
-			<version>${webjars.jquery.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>bootstrap</artifactId>
-			<version>${webjars.bootstrap.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>demo-console</artifactId>
-			<version>${webjars.demo-console.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>ekko-lightbox</artifactId>
-			<version>${webjars.ekko-lightbox.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars.bower</groupId>
-			<artifactId>webrtc-adapter</artifactId>
-			<version>${webjars.webrtc-adapter.version}</version>
-		</dependency>
-
-		<!-- Kurento -->
-		<dependency>
 			<groupId>org.kurento</groupId>
 			<artifactId>kurento-client</artifactId>
 			<version>${version.kurento-java}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.kurento</groupId>
-			<artifactId>kurento-utils-js</artifactId>
-			<version>${version.kurento-utils-js}</version>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
 		</dependency>
 	</dependencies>
 
