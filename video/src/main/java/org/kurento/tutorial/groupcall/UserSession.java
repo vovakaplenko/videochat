@@ -49,7 +49,7 @@ public class UserSession implements Closeable {
     return outgoingMedia;
   }
 
-  public String getName() {
+  public String getUserSessionId() {
     return userSessionId;
   }
 
@@ -63,65 +63,65 @@ public class UserSession implements Closeable {
   }
 
   public void receiveVideoFrom(UserSession sender, String sdpOffer) throws IOException {
-    log.info("USER {}: connecting with {} in room {}", getName(), sender.getName(), getRoomId());
+    log.info("USER {}: connecting with {} in room {}", getUserSessionId(), sender.getUserSessionId(), getRoomId());
 
-    log.trace("USER {}: SdpOffer for {} is {}", getName(), sender.getName(), sdpOffer);
+    log.trace("USER {}: SdpOffer for {} is {}", getUserSessionId(), sender.getUserSessionId(), sdpOffer);
 
     final String ipSdpAnswer = this.getEndpointForUser(sender).processOffer(sdpOffer);
     final JsonObject scParams = new JsonObject();
     scParams.addProperty("id", "receiveVideoAnswer");
-    scParams.addProperty("name", sender.getName());
-    scParams.addProperty("userSessionId", sender.getName());
+    scParams.addProperty("name", sender.getUserSessionId());
+    scParams.addProperty("userSessionId", sender.getUserSessionId());
     scParams.addProperty("sdpAnswer", ipSdpAnswer);
 
-    log.trace("USER {}: SdpAnswer for {} is {}", getName(), sender.getName(), ipSdpAnswer);
+    log.trace("USER {}: SdpAnswer for {} is {}", getUserSessionId(), sender.getUserSessionId(), ipSdpAnswer);
     this.sendMessage(scParams);
     log.debug("gather candidates");
     this.getEndpointForUser(sender).gatherCandidates();
   }
 
   private WebRtcEndpoint getEndpointForUser(final UserSession sender) {
-    if (sender.getName().equals(getName())) {
-      log.debug("PARTICIPANT {}: configuring loopback", getName());
+    if (sender.getUserSessionId().equals(getUserSessionId())) {
+      log.debug("PARTICIPANT {}: configuring loopback", getUserSessionId());
       return outgoingMedia;
     }
 
-    log.debug("PARTICIPANT {}: receiving video from {}", getName(), sender.getName());
+    log.debug("PARTICIPANT {}: receiving video from {}", getUserSessionId(), sender.getUserSessionId());
 
-    WebRtcEndpoint incomingEndpoint = incomingMediaMap.get(sender.getName());
+    WebRtcEndpoint incomingEndpoint = incomingMediaMap.get(sender.getUserSessionId());
     if (incomingEndpoint == null) {
-      log.debug("PARTICIPANT {}: creating new endpoint for {}", getName(), sender.getName());
+      log.debug("PARTICIPANT {}: creating new endpoint for {}", getUserSessionId(), sender.getUserSessionId());
       incomingEndpoint = new WebRtcEndpoint.Builder(pipeline).build();
 
-      incomingEndpoint.addIceCandidateFoundListener(new IncomingWebRtcEndpointIceCandidateFoundListener(userSessionId, sender.getName(), chatRequestService));
+      incomingEndpoint.addIceCandidateFoundListener(new IncomingWebRtcEndpointIceCandidateFoundListener(userSessionId, sender.getUserSessionId(), chatRequestService));
 
-      incomingMediaMap.put(sender.getName(), incomingEndpoint);
+      incomingMediaMap.put(sender.getUserSessionId(), incomingEndpoint);
     }
 
-    log.debug("PARTICIPANT {}: obtained endpoint for {}", getName(), sender.getName());
+    log.debug("PARTICIPANT {}: obtained endpoint for {}", getUserSessionId(), sender.getUserSessionId());
     sender.getOutgoingWebRtcPeer().connect(incomingEndpoint);
 
     return incomingEndpoint;
   }
 
   public void cancelVideoFrom(final UserSession sender) {
-    this.cancelVideoFrom(sender.getName());
+    this.cancelVideoFrom(sender.getUserSessionId());
   }
 
   public void cancelVideoFrom(final String senderName) {
-    log.debug("PARTICIPANT {}: canceling video reception from {}", getName(), senderName);
+    log.debug("PARTICIPANT {}: canceling video reception from {}", getUserSessionId(), senderName);
     final WebRtcEndpoint incoming = incomingMediaMap.remove(senderName);
 
-    log.debug("PARTICIPANT {}: removing endpoint for {}", getName(), senderName);
+    log.debug("PARTICIPANT {}: removing endpoint for {}", getUserSessionId(), senderName);
     incoming.release(new Continuation<Void>() {
       @Override
       public void onSuccess(Void result) throws Exception {
-        log.trace("PARTICIPANT {}: Released successfully incoming EP for {}", getName(), senderName);
+        log.trace("PARTICIPANT {}: Released successfully incoming EP for {}", getUserSessionId(), senderName);
       }
 
       @Override
       public void onError(Throwable cause) throws Exception {
-        log.warn("PARTICIPANT {}: Could not release incoming EP for {}", getName(),
+        log.warn("PARTICIPANT {}: Could not release incoming EP for {}", getUserSessionId(),
             senderName);
       }
     });
@@ -129,20 +129,20 @@ public class UserSession implements Closeable {
 
   @Override
   public void close() throws IOException {
-    log.debug("PARTICIPANT {}: Releasing resources", getName());
+    log.debug("PARTICIPANT {}: Releasing resources", getUserSessionId());
     for (final String remoteParticipantName : incomingMediaMap.keySet()) {
-      log.trace("PARTICIPANT {}: Released incoming EP for {}", getName(), remoteParticipantName);
+      log.trace("PARTICIPANT {}: Released incoming EP for {}", getUserSessionId(), remoteParticipantName);
       final WebRtcEndpoint ep = incomingMediaMap.get(remoteParticipantName);
       ep.release(new Continuation<Void>() {
 
         @Override
         public void onSuccess(Void result) throws Exception {
-          log.trace("PARTICIPANT {}: Released successfully incoming EP for {}", getName(), remoteParticipantName);
+          log.trace("PARTICIPANT {}: Released successfully incoming EP for {}", getUserSessionId(), remoteParticipantName);
         }
 
         @Override
         public void onError(Throwable cause) throws Exception {
-          log.warn("PARTICIPANT {}: Could not release incoming EP for {}", getName(),
+          log.warn("PARTICIPANT {}: Could not release incoming EP for {}", getUserSessionId(),
               remoteParticipantName);
         }
       });
@@ -152,24 +152,24 @@ public class UserSession implements Closeable {
 
       @Override
       public void onSuccess(Void result) throws Exception {
-        log.trace("PARTICIPANT {}: Released outgoing EP", getName());
+        log.trace("PARTICIPANT {}: Released outgoing EP", getUserSessionId());
       }
 
       @Override
       public void onError(Throwable cause) throws Exception {
-        log.warn("USER {}: Could not release outgoing EP", getName());
+        log.warn("USER {}: Could not release outgoing EP", getUserSessionId());
       }
     });
   }
 
   public void sendMessage(JsonObject message) throws IOException {
-    log.debug("USER {}: Sending message {}", getName(), message);
+    log.debug("USER {}: Sending message {}", getUserSessionId(), message);
 
     chatRequestService.sendToWebsocketForSession(userSessionId, message);
   }
 
   public void addCandidate(IceCandidate candidate, String name) {
-    if (getName().compareTo(name) == 0) {
+    if (getUserSessionId().compareTo(name) == 0) {
       outgoingMedia.addIceCandidate(candidate);
     } else {
       WebRtcEndpoint webRtc = incomingMediaMap.get(name);
