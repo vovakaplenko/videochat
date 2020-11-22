@@ -162,6 +162,7 @@ public class UserSession implements Closeable {
     });
   }
 
+  // send message to this user
   public void sendMessage(JsonObject message) throws IOException {
     log.debug("USER {}: Sending message {}", getUserSessionId(), message);
 
