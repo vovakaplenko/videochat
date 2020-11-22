@@ -42,7 +42,7 @@ public class UserSession implements Closeable {
     this.userSessionId = userSessionId;
     this.chatRequestService = chatRequestService;
     this.roomId = roomId;
-    this.outgoingMedia = new WebRtcEndpoint.Builder(pipeline).build();
+    this.outgoingMedia = new WebRtcEndpoint.Builder(roomMediaPipeline).build();
 
     this.outgoingMedia.addIceCandidateFoundListener(new OutgoingWebRtcEndpointIceCandidateFoundListener(userSessionId, chatRequestService));
   }
