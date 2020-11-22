@@ -33,6 +33,8 @@ public class UserSession implements Closeable {
   // UserSessionId : WebRtcEndpoint
   private final ConcurrentMap<String, WebRtcEndpoint> incomingMediaMap = new ConcurrentHashMap<>();
 
+  // TODO modifying
+  // TODO subscriptionId modifying
   public UserSession(final String userSessionId, Long roomId,
       MediaPipeline pipeline, ChatRequestService chatRequestService) {
 
@@ -80,6 +82,8 @@ public class UserSession implements Closeable {
     this.getEndpointForUser(sender).gatherCandidates();
   }
 
+  // TODO modifying
+  // TODO subscriptionId modifying
   private WebRtcEndpoint getEndpointForUser(final UserSession sender) {
     if (sender.getUserSessionId().equals(getUserSessionId())) {
       log.debug("PARTICIPANT {}: configuring loopback", getUserSessionId());
@@ -108,6 +112,7 @@ public class UserSession implements Closeable {
     this.cancelVideoFrom(sender.getUserSessionId());
   }
 
+  // TODO modifying
   public void cancelVideoFrom(final String senderName) {
     log.debug("PARTICIPANT {}: canceling video reception from {}", getUserSessionId(), senderName);
     final WebRtcEndpoint incoming = incomingMediaMap.remove(senderName);
@@ -127,6 +132,7 @@ public class UserSession implements Closeable {
     });
   }
 
+  // TODO modifying
   @Override
   public void close() throws IOException {
     log.debug("PARTICIPANT {}: Releasing resources", getUserSessionId());
