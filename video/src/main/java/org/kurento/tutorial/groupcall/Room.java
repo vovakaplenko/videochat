@@ -137,8 +137,7 @@ public class Room implements Closeable {
       try {
         user.close();
       } catch (IOException e) {
-        log.debug("ROOM {}: Could not invoke close on participant {}", roomId, user.getUserSessionId(),
-            e);
+        log.debug("ROOM {}: Could not invoke close on participant {}", roomId, user.getUserSessionId(), e);
       }
     }
 
