@@ -81,6 +81,7 @@ public class Room implements Closeable {
     final JsonObject newParticipantMsg = new JsonObject();
     newParticipantMsg.addProperty("id", "newParticipantArrived");
     newParticipantMsg.addProperty("name", newParticipant.getName());
+    newParticipantMsg.addProperty("userSessionId", newParticipant.getName());
 
     log.debug("ROOM {}: notifying other participants of new participant {}", roomId,
         newParticipant.getName());
@@ -103,6 +104,7 @@ public class Room implements Closeable {
     final JsonObject participantLeftJson = new JsonObject();
     participantLeftJson.addProperty("id", "participantLeft");
     participantLeftJson.addProperty("name", name);
+    participantLeftJson.addProperty("userSessionId", name);
     for (final UserSession participant : participants.values()) {
       try {
         participant.cancelVideoFrom(name);

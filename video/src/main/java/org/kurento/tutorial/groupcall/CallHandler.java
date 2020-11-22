@@ -70,56 +70,11 @@ public class CallHandler  {
               candidate.get("sdpMid").getAsString(),
               candidate.get("sdpMLineIndex").getAsInt()
       );
-      user.addCandidate(cand, jsonMessage.get("name").getAsString());
+      user.addCandidate(cand, jsonMessage.get("userSessionId").getAsString());
     }
 
   }
-  /*
-  @Override
-  public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-    final JsonObject jsonMessage = gson.fromJson(message.getPayload(), JsonObject.class);
 
-    final UserSession user = registry.getBySession(session);
-
-    if (user != null) {
-      log.debug("Incoming message from user '{}': {}", user.getName(), jsonMessage);
-    } else {
-      log.debug("Incoming message from new user: {}", jsonMessage);
-    }
-
-    switch (jsonMessage.get("id").getAsString()) {
-      case "joinRoom":
-        joinRoom(jsonMessage, session);
-        break;
-      case "receiveVideoFrom":
-        final String senderName = jsonMessage.get("sender").getAsString();
-        final UserSession sender = registry.getByName(senderName);
-        final String sdpOffer = jsonMessage.get("sdpOffer").getAsString();
-        user.receiveVideoFrom(sender, sdpOffer);
-        break;
-      case "leaveRoom":
-        leaveRoom(user);
-        break;
-      case "onIceCandidate":
-        JsonObject candidate = jsonMessage.get("candidate").getAsJsonObject();
-
-        if (user != null) {
-          IceCandidate cand = new IceCandidate(candidate.get("candidate").getAsString(),
-              candidate.get("sdpMid").getAsString(), candidate.get("sdpMLineIndex").getAsInt());
-          user.addCandidate(cand, jsonMessage.get("name").getAsString());
-        }
-        break;
-      default:
-        break;
-    }
-  }
-
-  @Override
-  public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-    UserSession user = registry.removeBySession(session);
-    roomManager.getRoom(user.getRoomName()).leave(user);
-  }
-*/
   private void joinRoom(Long roomId, String userSessionId) throws IOException {
     log.info("PARTICIPANT {}: trying to join room {}", userSessionId, roomId);
 
