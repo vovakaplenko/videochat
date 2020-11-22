@@ -25,7 +25,7 @@ public class UserSession implements Closeable {
 
   private final String userSessionId;
 
-  private final MediaPipeline pipeline;
+  private final MediaPipeline roomMediaPipeline;
 
   private final Long roomId;
   private final WebRtcEndpoint outgoingMedia;
@@ -38,7 +38,7 @@ public class UserSession implements Closeable {
   public UserSession(final String userSessionId, Long roomId,
       MediaPipeline pipeline, ChatRequestService chatRequestService) {
 
-    this.pipeline = pipeline;
+    this.roomMediaPipeline = pipeline;
     this.userSessionId = userSessionId;
     this.chatRequestService = chatRequestService;
     this.roomId = roomId;
@@ -95,7 +95,7 @@ public class UserSession implements Closeable {
     WebRtcEndpoint incomingEndpoint = incomingMediaMap.get(sender.getUserSessionId());
     if (incomingEndpoint == null) {
       log.debug("PARTICIPANT {}: creating new endpoint for {}", getUserSessionId(), sender.getUserSessionId());
-      incomingEndpoint = new WebRtcEndpoint.Builder(pipeline).build();
+      incomingEndpoint = new WebRtcEndpoint.Builder(roomMediaPipeline).build();
 
       incomingEndpoint.addIceCandidateFoundListener(new IncomingWebRtcEndpointIceCandidateFoundListener(userSessionId, sender.getUserSessionId(), chatRequestService));
 
