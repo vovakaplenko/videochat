@@ -2,6 +2,7 @@ package name.nkonev.video.dto.out;
 
 import org.kurento.client.IceCandidate;
 
+// TODO think about equals & hashCode for tests
 public class IceCandidateDto extends WithUserSession {
     public IceCandidateDto(String userSessionId, IceCandidate candidate) {
         this.candidate = candidate;

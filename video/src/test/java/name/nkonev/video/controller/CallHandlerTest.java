@@ -1,6 +1,9 @@
 package name.nkonev.video.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import name.nkonev.video.GroupCallApp;
+import name.nkonev.video.dto.in.JoinRoomDto;
+import name.nkonev.video.dto.out.ExistsParticipantsDto;
 import name.nkonev.video.dto.out.Typed;
 import name.nkonev.video.service.ChatRequestService;
 import org.junit.jupiter.api.Test;
@@ -13,9 +16,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +32,9 @@ public class CallHandlerTest {
 
     @Autowired
     protected MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockBean
     private ChatRequestService chatRequestService;
@@ -40,13 +48,15 @@ public class CallHandlerTest {
 
         Mockito.doNothing().when(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.any(Typed.class));
 
+        JoinRoomDto joinRoomDto = new JoinRoomDto(sessionId, 1L);
+
         mockMvc.perform(
                 post("/joinRoom")
-                        .param("userSessionId", sessionId)
-                        .param("roomId", "1")
+                        .content(objectMapper.writeValueAsString(joinRoomDto))
+                        .contentType(MediaType.APPLICATION_JSON)
         ).andDo(mvcResult -> {
             LOGGER.info(mvcResult.getResponse().getContentAsString());
-            Mockito.verify(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.any(Typed.class));
+            Mockito.verify(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.eq(new ExistsParticipantsDto(Collections.emptyList())));
         });
     }
 }
