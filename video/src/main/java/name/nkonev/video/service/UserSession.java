@@ -1,8 +1,9 @@
 package name.nkonev.video.service;
 
-import com.google.gson.JsonObject;
+import name.nkonev.video.dto.out.IceCandidateDto;
+import name.nkonev.video.dto.out.ReceiveVideoAnswerFromDto;
+import name.nkonev.video.dto.out.TypedDto;
 import org.kurento.client.*;
-import org.kurento.jsonrpc.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,18 +59,10 @@ public class UserSession implements Closeable {
 
     public void receiveVideoFrom(UserSession sender, String sdpOffer) throws IOException {
         log.info("USER {}: connecting with {} in room {}", getUserSessionId(), sender.getUserSessionId(), getRoomId());
-
         log.trace("USER {}: SdpOffer for {} is {}", getUserSessionId(), sender.getUserSessionId(), sdpOffer);
-
         final String ipSdpAnswer = this.getEndpointForUser(sender).processOffer(sdpOffer);
-        final JsonObject scParams = new JsonObject();
-        scParams.addProperty("id", "receiveVideoAnswer");
-        scParams.addProperty("name", sender.getUserSessionId());
-        scParams.addProperty("userSessionId", sender.getUserSessionId());
-        scParams.addProperty("sdpAnswer", ipSdpAnswer);
-
         log.trace("USER {}: SdpAnswer for {} is {}", getUserSessionId(), sender.getUserSessionId(), ipSdpAnswer);
-        this.sendMessage(scParams);
+        this.sendMessage(new ReceiveVideoAnswerFromDto(sender.getUserSessionId(), ipSdpAnswer));
         log.debug("gather candidates");
         this.getEndpointForUser(sender).gatherCandidates();
     }
@@ -118,8 +111,7 @@ public class UserSession implements Closeable {
 
             @Override
             public void onError(Throwable cause) throws Exception {
-                log.warn("PARTICIPANT {}: Could not release incoming EP for {}", getUserSessionId(),
-                        senderName);
+                log.warn("PARTICIPANT {}: Could not release incoming EP for {}", getUserSessionId(), senderName);
             }
         });
     }
@@ -161,7 +153,7 @@ public class UserSession implements Closeable {
     }
 
     // send message to this user
-    public void sendMessage(JsonObject message) throws IOException {
+    public void sendMessage(TypedDto message) throws IOException {
         log.debug("USER {}: Sending message {}", getUserSessionId(), message);
 
         chatRequestService.sendToWebsocketForSession(userSessionId, message);
@@ -180,7 +172,7 @@ public class UserSession implements Closeable {
 
 }
 
-
+// one
 class OutgoingWebRtcEndpointIceCandidateFoundListener implements EventListener<IceCandidateFoundEvent> {
     private final String userSessionId;
     private final ChatRequestService chatRequestService;
@@ -193,16 +185,11 @@ class OutgoingWebRtcEndpointIceCandidateFoundListener implements EventListener<I
 
     @Override
     public void onEvent(IceCandidateFoundEvent event) {
-        JsonObject response = new JsonObject();
-        response.addProperty("id", "iceCandidate");
-        response.addProperty("name", userSessionId);
-        response.addProperty("userSessionId", userSessionId);
-        response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
-
-        chatRequestService.sendToWebsocketForSession(userSessionId, response);
+        chatRequestService.sendToWebsocketForSession(userSessionId, new IceCandidateDto(userSessionId, event.getCandidate()));
     }
 }
 
+// several
 class IncomingWebRtcEndpointIceCandidateFoundListener implements EventListener<IceCandidateFoundEvent> {
 
     private final String userSessionId; // my
@@ -217,13 +204,7 @@ class IncomingWebRtcEndpointIceCandidateFoundListener implements EventListener<I
 
     @Override
     public void onEvent(IceCandidateFoundEvent event) {
-        JsonObject response = new JsonObject();
-        response.addProperty("id", "iceCandidate");
-        response.addProperty("name", otherUserSessionId);
-        response.addProperty("userSessionId", otherUserSessionId);
-        response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
-
-        chatRequestService.sendToWebsocketForSession(userSessionId, response);
+        chatRequestService.sendToWebsocketForSession(userSessionId, new IceCandidateDto(otherUserSessionId, event.getCandidate()));
     }
 
 }

@@ -1,7 +1,7 @@
 package name.nkonev.video.controller;
 
-import com.google.gson.JsonObject;
 import name.nkonev.video.GroupCallApp;
+import name.nkonev.video.dto.out.TypedDto;
 import name.nkonev.video.service.ChatRequestService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +38,7 @@ public class CallHandlerTest {
 
         String sessionId = UUID.randomUUID().toString();
 
-        Mockito.doNothing().when(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.any(JsonObject.class));
+        Mockito.doNothing().when(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.any(TypedDto.class));
 
         mockMvc.perform(
                 post("/joinRoom")
@@ -46,7 +46,7 @@ public class CallHandlerTest {
                         .param("roomId", "1")
         ).andDo(mvcResult -> {
             LOGGER.info(mvcResult.getResponse().getContentAsString());
-            Mockito.verify(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.any(JsonObject.class));
+            Mockito.verify(chatRequestService).sendToWebsocketForSession(Mockito.eq(sessionId), Mockito.any(TypedDto.class));
         });
     }
 }
