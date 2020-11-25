@@ -1,5 +1,5 @@
 
-package org.kurento.tutorial.groupcall;
+package name.nkonev.video;
 
 import org.kurento.client.KurentoClient;
 import org.springframework.beans.factory.annotation.Autowired;

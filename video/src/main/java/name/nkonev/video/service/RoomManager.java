@@ -1,5 +1,5 @@
 
-package org.kurento.tutorial.groupcall;
+package name.nkonev.video.service;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

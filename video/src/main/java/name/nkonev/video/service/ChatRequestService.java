@@ -1,4 +1,4 @@
-package org.kurento.tutorial.groupcall;
+package name.nkonev.video.service;
 
 import com.google.gson.JsonObject;
 import okhttp3.OkHttpClient;

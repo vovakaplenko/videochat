@@ -1,4 +1,4 @@
-package org.kurento.tutorial.groupcall;
+package name.nkonev.video.configuration;
 
 import okhttp3.OkHttpClient;
 import org.springframework.context.annotation.Bean;

@@ -3,12 +3,12 @@
 		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<artifactId>kurento-one2many-call</artifactId>
+	<artifactId>video</artifactId>
 	<groupId>name.nkonev.video</groupId>
 	<version>0.0.0</version>
 	<packaging>jar</packaging>
 
-	<name>Kurento Adapter</name>
+	<name>video</name>
 
 	<properties>
 		<spring.boot.version>2.4.0</spring.boot.version>

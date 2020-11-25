@@ -1,7 +1,11 @@
-package org.kurento.tutorial.groupcall;
+package name.nkonev.video.controller;
 
 import java.io.IOException;
+
+import name.nkonev.video.service.Room;
+import name.nkonev.video.service.RoomManager;
 import org.kurento.client.IceCandidate;
+import name.nkonev.video.service.UserSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
