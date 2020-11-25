@@ -1,6 +1,6 @@
 package name.nkonev.video.service;
 
-import name.nkonev.video.dto.out.TypedDto;
+import name.nkonev.video.dto.out.Typed;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ public class ChatRequestService {
     @Autowired
     private OkHttpClient okHttpClient;
 
-    public void sendToWebsocketForSession(String sessionId, TypedDto data) {
+    public void sendToWebsocketForSession(String sessionId, Typed data) {
 
     }
 

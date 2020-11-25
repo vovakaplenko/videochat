@@ -1,15 +1,17 @@
 package name.nkonev.video.dto.in;
 
-public class OnIceCandidateDto {
+public class OnIceCandidateDto extends AuthData {
     private InternalIceCandidateDto candidate;
     private String fromUserSessionId;
 
     public OnIceCandidateDto() {
     }
 
-    public OnIceCandidateDto(InternalIceCandidateDto candidate, String fromUserSessionId) {
+    public OnIceCandidateDto(String userSessionId, Long roomId, InternalIceCandidateDto candidate, String fromUserSessionId) {
         this.candidate = candidate;
         this.fromUserSessionId = fromUserSessionId;
+        setUserSessionId(userSessionId);
+        setRoomId(roomId);
     }
 
     public InternalIceCandidateDto getCandidate() {

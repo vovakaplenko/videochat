@@ -2,7 +2,7 @@ package name.nkonev.video.service;
 
 import name.nkonev.video.dto.out.IceCandidateDto;
 import name.nkonev.video.dto.out.ReceiveVideoAnswerFromDto;
-import name.nkonev.video.dto.out.TypedDto;
+import name.nkonev.video.dto.out.Typed;
 import org.kurento.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +153,7 @@ public class UserSession implements Closeable {
     }
 
     // send message to this user
-    public void sendMessage(TypedDto message) throws IOException {
+    public void sendMessage(Typed message) throws IOException {
         log.debug("USER {}: Sending message {}", getUserSessionId(), message);
 
         chatRequestService.sendToWebsocketForSession(userSessionId, message);

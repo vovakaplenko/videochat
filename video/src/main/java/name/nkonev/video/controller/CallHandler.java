@@ -2,6 +2,8 @@ package name.nkonev.video.controller;
 
 import java.io.IOException;
 
+import name.nkonev.video.dto.in.JoinRoomDto;
+import name.nkonev.video.dto.in.LeaveRoomDto;
 import name.nkonev.video.dto.in.OnIceCandidateDto;
 import name.nkonev.video.dto.in.ReceiveVideoFromDto;
 import name.nkonev.video.service.Room;
@@ -25,12 +27,14 @@ public class CallHandler  {
   private RoomManager roomManager;
 
   @PostMapping("/joinRoom")
-  public void joinRoom(@RequestParam String userSessionId, @RequestParam Long roomId) throws IOException {
-    joinRoom(roomId, userSessionId);
+  public void joinRoom(@RequestBody JoinRoomDto joinRoomDto) throws IOException {
+    joinRoom(joinRoomDto.getRoomId(), joinRoomDto.getUserSessionId());
   }
 
   @PostMapping("/receiveVideoFrom")
-  public void receiveVideoFrom(@RequestParam String userSessionId, @RequestParam Long roomId, @RequestBody ReceiveVideoFromDto jsonMessage) throws IOException {
+  public void receiveVideoFrom(@RequestBody ReceiveVideoFromDto jsonMessage) throws IOException {
+    String userSessionId = jsonMessage.getUserSessionId();
+    Long roomId = jsonMessage.getRoomId();
     final Room room = roomManager.getRoom(roomId);
     final UserSession user = room.getUserSession(userSessionId);
     if (user == null) {
@@ -50,12 +54,15 @@ public class CallHandler  {
   }
 
   @PostMapping("/leaveRoom")
-  public void leaveRoom(@RequestParam String userSessionId, @RequestParam Long roomId) throws IOException {
-    leaveRoom(roomId, userSessionId);
+  public void leaveRoom(@RequestBody LeaveRoomDto leaveRoomDto) throws IOException {
+    leaveRoom(leaveRoomDto.getRoomId(), leaveRoomDto.getUserSessionId());
   }
 
   @PostMapping("/onIceCandidate")
-  public void onIceCandidate(@RequestParam String userSessionId, @RequestParam Long roomId, @RequestBody OnIceCandidateDto jsonMessage) {
+  public void onIceCandidate(@RequestBody OnIceCandidateDto jsonMessage) {
+    String userSessionId = jsonMessage.getUserSessionId();
+    Long roomId = jsonMessage.getRoomId();
+
     final Room room = roomManager.getRoom(roomId);
     final UserSession user = room.getUserSession(userSessionId);
     if (user == null) {

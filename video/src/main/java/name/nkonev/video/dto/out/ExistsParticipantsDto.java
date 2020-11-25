@@ -2,7 +2,7 @@ package name.nkonev.video.dto.out;
 
 import java.util.List;
 
-public class ExistsParticipantsDto extends TypedDto {
+public class ExistsParticipantsDto extends Typed {
     public ExistsParticipantsDto() {
     }
 

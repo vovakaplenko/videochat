@@ -1,15 +1,17 @@
 package name.nkonev.video.dto.in;
 
-public class ReceiveVideoFromDto {
+public class ReceiveVideoFromDto extends AuthData {
     private String senderSessionId;
     private String sdpOffer;
 
     public ReceiveVideoFromDto() {
     }
 
-    public ReceiveVideoFromDto(String senderSessionId, String sdpOffer) {
+    public ReceiveVideoFromDto(String userSessionId, Long roomId, String senderSessionId, String sdpOffer) {
         this.senderSessionId = senderSessionId;
         this.sdpOffer = sdpOffer;
+        setUserSessionId(userSessionId);
+        setRoomId(roomId);
     }
 
     public String getSenderSessionId() {
