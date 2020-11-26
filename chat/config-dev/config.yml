@@ -53,3 +53,15 @@ jaeger:
 iceServers:
   #- "stun:chat.nkonev.name:3478"
   - "stun:stun.l.google.com:19302"
+
+video:
+  redis:
+    address: :36379
+    password: ""
+    db: 2
+    connectTimeout: 5s
+    readTimeout: 10s # 0 means infinity read
+    writeTimeout: 30s
+    idleTimeout: 60s
+    maxIdle: 1
+    maxActive: 10

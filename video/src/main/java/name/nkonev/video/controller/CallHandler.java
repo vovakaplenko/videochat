@@ -19,11 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class CallHandler  {
 
   private static final Logger log = LoggerFactory.getLogger(CallHandler.class);
+  public static final String INVOKE = "/invoke";
 
   @Autowired
   private RoomManager roomManager;
 
-  @PostMapping("/invoke")
+  @PostMapping(INVOKE)
   public void invoke(@RequestBody EmbeddedPayload invokeDto) {
     if (invokeDto instanceof JoinRoomDto) {
       joinRoom((JoinRoomDto) invokeDto);

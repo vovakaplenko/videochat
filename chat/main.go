@@ -46,6 +46,7 @@ func main() {
 			db.ConfigureDb,
 			notifications.NewNotifications,
 			listener.RedisAaaConnection,
+			listener.RedisVideoConnection,
 			listener.CreateAaaUserProfileUpdateListener,
 		),
 		fx.Invoke(

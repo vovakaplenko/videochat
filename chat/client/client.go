@@ -56,10 +56,6 @@ func (rc RestClient) GetUsers(userIds []int64, c context.Context) ([]*dto.User, 
 		"Content-Type":    {contentType},
 	}
 
-	if err != nil {
-		Logger.Warningln("Error during inserting tracing")
-	}
-
 	parsedUrl, err := url.Parse(fullUrl)
 	if err != nil {
 		Logger.Errorln("Failed during parse aaa url:", err)
@@ -113,4 +109,51 @@ func convertToParticipant(user *name_nkonev_aaa.UserDto) dto.User {
 		Login:  user.Login,
 		Avatar: nullableAvatar,
 	}
+}
+
+func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUrl string) error {
+	contentType := "application/json;charset=UTF-8"
+	requestHeaders := map[string][]string{
+		"Accept-Encoding": {"gzip, deflate"},
+		"Accept":          {contentType},
+		"Content-Type":    {contentType},
+	}
+
+	fullUrl := videoSelectedUrl
+
+	parsedUrl, err := url.Parse(fullUrl)
+	if err != nil {
+		Logger.Errorln("Failed during parse aaa url:", err)
+		return err
+	}
+
+	userRequestReader := bytes.NewReader(data)
+	userRequestReadCloser := ioutil.NopCloser(userRequestReader)
+	request := &http.Request{
+		Method: "GET",
+		Header: requestHeaders,
+		Body:   userRequestReadCloser,
+		URL:    parsedUrl,
+	}
+
+	ctx, span := trace.StartSpan(c, "video.invoke")
+	defer span.End()
+	request = request.WithContext(ctx)
+	resp, err := rc.Do(request)
+	if err != nil {
+		Logger.Warningln("Failed to request get users response:", err)
+		return err
+	}
+	defer resp.Body.Close()
+	code := resp.StatusCode
+	if code != 200 {
+		Logger.Warningln("Users response responded non-200 code: ", code)
+		return err
+	}
+
+	_, err2 := ioutil.ReadAll(resp.Body); if err2 != nil {
+		Logger.Errorln("Failed to decode get users response:", err2)
+		return err2
+	}
+	return nil
 }
