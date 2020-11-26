@@ -51,7 +51,7 @@ public class CallHandlerTest {
         JoinRoomDto joinRoomDto = new JoinRoomDto(sessionId, 1L);
 
         mockMvc.perform(
-                post("/joinRoom")
+                post("/invoke")
                         .content(objectMapper.writeValueAsString(joinRoomDto))
                         .contentType(MediaType.APPLICATION_JSON)
         ).andDo(mvcResult -> {

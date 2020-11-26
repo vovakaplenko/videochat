@@ -57,7 +57,7 @@ public class UserSession implements Closeable {
         return this.roomId;
     }
 
-    public void receiveVideoFrom(UserSession sender, String sdpOffer) throws IOException {
+    public void receiveVideoFrom(UserSession sender, String sdpOffer) {
         log.info("USER {}: connecting with {} in room {}", getUserSessionId(), sender.getUserSessionId(), getRoomId());
         log.trace("USER {}: SdpOffer for {} is {}", getUserSessionId(), sender.getUserSessionId(), sdpOffer);
         final String ipSdpAnswer = this.getEndpointForUser(sender).processOffer(sdpOffer);
@@ -118,7 +118,7 @@ public class UserSession implements Closeable {
 
     // TODO modifying
     @Override
-    public void close() throws IOException {
+    public void close() {
         log.debug("PARTICIPANT {}: Releasing resources", getUserSessionId());
         for (final String remoteParticipantName : incomingMediaMap.keySet()) {
             log.trace("PARTICIPANT {}: Released incoming EP for {}", getUserSessionId(), remoteParticipantName);
@@ -153,7 +153,7 @@ public class UserSession implements Closeable {
     }
 
     // send message to this user
-    public void sendMessage(Typed message) throws IOException {
+    public void sendMessage(Typed message) {
         log.debug("USER {}: Sending message {}", getUserSessionId(), message);
 
         chatRequestService.sendToWebsocketForSession(userSessionId, message);

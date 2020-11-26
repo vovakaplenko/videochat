@@ -2,7 +2,7 @@ package name.nkonev.video.dto.in;
 
 import java.util.Objects;
 
-public abstract class AuthData {
+public abstract class AuthData implements EmbeddedPayload {
     protected String userSessionId;
     protected Long roomId;
 

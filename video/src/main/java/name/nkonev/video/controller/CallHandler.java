@@ -2,10 +2,7 @@ package name.nkonev.video.controller;
 
 import java.io.IOException;
 
-import name.nkonev.video.dto.in.JoinRoomDto;
-import name.nkonev.video.dto.in.LeaveRoomDto;
-import name.nkonev.video.dto.in.OnIceCandidateDto;
-import name.nkonev.video.dto.in.ReceiveVideoFromDto;
+import name.nkonev.video.dto.in.*;
 import name.nkonev.video.service.Room;
 import name.nkonev.video.service.RoomManager;
 import org.kurento.client.IceCandidate;
@@ -26,13 +23,24 @@ public class CallHandler  {
   @Autowired
   private RoomManager roomManager;
 
-  @PostMapping("/joinRoom")
-  public void joinRoom(@RequestBody JoinRoomDto joinRoomDto) throws IOException {
+  @PostMapping("/invoke")
+  public void invoke(@RequestBody EmbeddedPayload invokeDto) {
+    if (invokeDto instanceof JoinRoomDto) {
+      joinRoom((JoinRoomDto) invokeDto);
+    } if (invokeDto instanceof ReceiveVideoFromDto) {
+      receiveVideoFrom((ReceiveVideoFromDto) invokeDto);
+    } if (invokeDto instanceof LeaveRoomDto) {
+      leaveRoom((LeaveRoomDto) invokeDto);
+    } if (invokeDto instanceof OnIceCandidateDto) {
+      onIceCandidate((OnIceCandidateDto) invokeDto);
+    }
+  }
+
+  private void joinRoom(JoinRoomDto joinRoomDto) {
     joinRoom(joinRoomDto.getRoomId(), joinRoomDto.getUserSessionId());
   }
 
-  @PostMapping("/receiveVideoFrom")
-  public void receiveVideoFrom(@RequestBody ReceiveVideoFromDto jsonMessage) throws IOException {
+  private void receiveVideoFrom(ReceiveVideoFromDto jsonMessage) {
     String userSessionId = jsonMessage.getUserSessionId();
     Long roomId = jsonMessage.getRoomId();
     final Room room = roomManager.getRoom(roomId);
@@ -53,13 +61,11 @@ public class CallHandler  {
     user.receiveVideoFrom(sender, sdpOffer);
   }
 
-  @PostMapping("/leaveRoom")
-  public void leaveRoom(@RequestBody LeaveRoomDto leaveRoomDto) throws IOException {
+  private void leaveRoom(LeaveRoomDto leaveRoomDto)  {
     leaveRoom(leaveRoomDto.getRoomId(), leaveRoomDto.getUserSessionId());
   }
 
-  @PostMapping("/onIceCandidate")
-  public void onIceCandidate(@RequestBody OnIceCandidateDto jsonMessage) {
+  private void onIceCandidate(OnIceCandidateDto jsonMessage) {
     String userSessionId = jsonMessage.getUserSessionId();
     Long roomId = jsonMessage.getRoomId();
 
@@ -81,14 +87,14 @@ public class CallHandler  {
 
   }
 
-  private void joinRoom(Long roomId, String userSessionId) throws IOException {
+  private void joinRoom(Long roomId, String userSessionId) {
     log.info("PARTICIPANT {}: trying to join room {}", userSessionId, roomId);
 
     Room room = roomManager.getRoom(roomId);
     final UserSession user = room.join(userSessionId);
   }
 
-  private void leaveRoom(Long roomId, String userSessionId) throws IOException {
+  private void leaveRoom(Long roomId, String userSessionId) {
     final Room room = roomManager.getRoom(roomId);
     final UserSession userSession = room.getUserSession(userSessionId);
     if (userSession == null) {

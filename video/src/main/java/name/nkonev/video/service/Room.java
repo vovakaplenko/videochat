@@ -45,7 +45,7 @@ public class Room implements Closeable {
     this.close();
   }
 
-  public UserSession join(String userSessionId) throws IOException {
+  public UserSession join(String userSessionId) {
     log.info("ROOM {}: adding participant {}", this.roomId, userSessionId);
     final UserSession participant = new UserSession(userSessionId, roomId, this.pipeline, this.chatRequestService);
     sendParticipantNamesTo(participant);
@@ -54,18 +54,18 @@ public class Room implements Closeable {
     return participant;
   }
 
-  public void leave(UserSession user) throws IOException {
+  public void leave(UserSession user) {
     log.debug("PARTICIPANT {}: Leaving room {}", user.getUserSessionId(), roomId);
     this.removeParticipant(user.getUserSessionId());
     user.close();
   }
 
-  private void joinRoom(UserSession newParticipant) throws IOException {
+  private void joinRoom(UserSession newParticipant) {
     log.debug("ROOM {}: notifying other participants of new participant {}", roomId, newParticipant.getUserSessionId());
     for (final UserSession participant : participants.values()) {
       try {
         participant.sendMessage(new NewParticipantArrivedDto(newParticipant.getUserSessionId()));
-      } catch (final IOException e) {
+      } catch (final RuntimeException e) {
         log.debug("ROOM {}: participant {} could not be notified", roomId, participant.getUserSessionId(), e);
       }
     }
@@ -81,7 +81,7 @@ public class Room implements Closeable {
       try {
         participant.cancelVideoFrom(name);
         participant.sendMessage(new ParticipantLeftDto(name));
-      } catch (final IOException e) {
+      } catch (final RuntimeException e) {
         unnotifiedParticipants.add(participant.getUserSessionId());
       }
     }
@@ -93,7 +93,7 @@ public class Room implements Closeable {
 
   }
 
-  private void sendParticipantNamesTo(UserSession user) throws IOException {
+  private void sendParticipantNamesTo(UserSession user)  {
     final List<String> participantsArray = participants.values().stream()
             .filter(userSession -> user.getUserSessionId() != null && !user.getUserSessionId().equals(userSession.getUserSessionId()))
             .map(UserSession::getUserSessionId)
@@ -115,7 +115,7 @@ public class Room implements Closeable {
     for (final UserSession user : participants.values()) {
       try {
         user.close();
-      } catch (IOException e) {
+      } catch (RuntimeException e) {
         log.debug("ROOM {}: Could not invoke close on participant {}", roomId, user.getUserSessionId(), e);
       }
     }
