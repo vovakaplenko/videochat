@@ -219,6 +219,8 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 						Error: centrifuge.ErrorInternal,
 					}
 				}
+				// we need to map users with same chat id to the same video and following kurento server
+				// because kurento itself isn't scaling
 				videoUrl, err := loadbalancer.SelectInstanceUrl(v.ChatId)
 				if err != nil {
 					Logger.Errorf("Error during balance %v %v", string(event.Data), err)
