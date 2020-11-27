@@ -130,7 +130,7 @@ func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUr
 	userRequestReader := bytes.NewReader(data)
 	userRequestReadCloser := ioutil.NopCloser(userRequestReader)
 	request := &http.Request{
-		Method: "GET",
+		Method: "POST",
 		Header: requestHeaders,
 		Body:   userRequestReadCloser,
 		URL:    parsedUrl,
