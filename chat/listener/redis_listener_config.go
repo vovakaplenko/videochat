@@ -106,12 +106,14 @@ func RedisVideoConnection(lc fx.Lifecycle) (VideoRedisPool, error) {
 			return err
 		},
 	}
-	lc.Append(fx.Hook{
-		OnStop: func(ctx context.Context) error {
-			Logger.Infof("Stopping redis video connection")
-			return pool.Close()
-		},
-	})
+	if (lc != nil) {
+		lc.Append(fx.Hook{
+			OnStop: func(ctx context.Context) error {
+				Logger.Infof("Stopping redis video connection")
+				return pool.Close()
+			},
+		})
+	}
 	return VideoRedisPool{pool}, nil
 }
 
@@ -172,7 +174,7 @@ func ListenPubSubChannels(
 						switch n.Count {
 						case len(channels):
 							// Notify application when all channels are subscribed.
-							Logger.Infof("app subscribed to the all channels")
+							Logger.Infof("app subscribed to the aaa channels")
 						case 0:
 							// Return from the goroutine when all channels are unsubscribed.
 							done <- nil

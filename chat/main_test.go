@@ -21,6 +21,7 @@ import (
 	"nkonev.name/chat/client"
 	"nkonev.name/chat/db"
 	"nkonev.name/chat/handlers"
+	"nkonev.name/chat/listener"
 	. "nkonev.name/chat/logger"
 	"nkonev.name/chat/notifications"
 	name_nkonev_aaa "nkonev.name/chat/proto"
@@ -170,6 +171,8 @@ func runTest(t *testing.T, testFunc interface{}) *fxtest.App {
 			configureTestMigrations,
 			db.ConfigureDb,
 			notifications.NewNotifications,
+			listener.RedisVideoConnection,
+			client.NewStickyLoadBalancer,
 		),
 		fx.Invoke(
 			runMigrations,
@@ -200,6 +203,8 @@ func startAppFull(t *testing.T) (*fxtest.App, fx.Shutdowner) {
 			configureTestMigrations,
 			db.ConfigureDb,
 			notifications.NewNotifications,
+			listener.RedisVideoConnection,
+			client.NewStickyLoadBalancer,
 		),
 		fx.Invoke(
 			runMigrations,

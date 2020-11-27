@@ -38,7 +38,7 @@ public class GroupCallApp {
 
   @Scheduled(cron = "${video.liveness.cron}")
   public void f() throws UnknownHostException {
-    redisTemplate.opsForValue().set("video:http://"+InetAddress.getLocalHost().getHostAddress()+":"+webServerAppCtxt.getWebServer().getPort() + INVOKE, "true", 5, TimeUnit.SECONDS);
+    redisTemplate.opsForValue().set("video::http://"+InetAddress.getLocalHost().getHostAddress()+":"+webServerAppCtxt.getWebServer().getPort() + INVOKE, "true", 5, TimeUnit.SECONDS);
   }
 
 }

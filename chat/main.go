@@ -48,6 +48,7 @@ func main() {
 			listener.RedisAaaConnection,
 			listener.RedisVideoConnection,
 			listener.CreateAaaUserProfileUpdateListener,
+			client.NewStickyLoadBalancer,
 		),
 		fx.Invoke(
 			initJaeger,
