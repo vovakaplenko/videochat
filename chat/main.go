@@ -158,6 +158,10 @@ func configureEcho(
 
 	e.GET("/chat/public/webrtc/config", handlers.GetConfiguration)
 
+	vi := handlers.NewVideoHandler(node)
+	// invoked from video
+	e.POST("/internal/video/send", vi.SendToUser)
+
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
 			// do some work on application stop (like closing connections and files)
