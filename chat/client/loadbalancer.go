@@ -28,7 +28,7 @@ func (lb stickyLoadBalancerImpl) SelectInstanceUrl(chatId int64) (string, error)
 	if err != nil {
 		return "", err
 	}
-	logger.Logger.Info(reply)
+	logger.Logger.Debug(reply)
 	sort.Strings(reply)
 	var addresses = []string{}
 	for _, withPrefixAddress := range reply {

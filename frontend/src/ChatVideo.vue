@@ -16,7 +16,7 @@
     import {mapGetters} from "vuex";
     import {GET_USER} from "./store";
     import bus, {
-        CHANGE_PHONE_BUTTON,
+        CHANGE_PHONE_BUTTON, USER_PROFILE_CHANGED, VIDEO_EXISTING_PARTICIPANTS,
         VIDEO_LOCAL_ESTABLISHED
     } from "./bus";
     import {phoneFactory} from "./changeTitle";
@@ -24,7 +24,7 @@
     import Vue from 'vue'
 
     const EVENT_CANDIDATE = 'candidate';
-    const EVENT_HELLO = 'hello';
+    const JOIN_ROOM = 'joinRoom';
     const EVENT_BYE = 'bye';
     const EVENT_OFFER = 'offer';
     const EVENT_ANSWER = 'answer';
@@ -33,8 +33,6 @@
         data() {
             return {
                 prevVideoPaneSize: null,
-
-                signalingSubscription: null,
 
                 pcConfig: null,
 
@@ -152,7 +150,7 @@
                 for (const rcde of this.remoteConnectionData) {
                     this.initializeRemoteConnectionElement(rcde);
                 }
-                this.sendMessage({type: EVENT_HELLO});
+                this.sendMessage({type: JOIN_ROOM})
             },
 
             maybeStart(rcde){
@@ -194,7 +192,6 @@
                     this.fonCreateSessionDescriptionError(pcde)
                 );
             },
-            // ex doCall
             doOffer(pcde) {
                 console.log('Sending offer to peer ' + pcde.userId);
                 const pc = pcde.peerConnection;
@@ -237,7 +234,11 @@
             },
             sendMessage(message) {
                 console.log('Client sending message: ', message);
-                this.signalingSubscription.publish(setProperData(message));
+                this.centrifuge.rpc(message).then(function(data){
+                    console.log("RPC response data: " + JSON.stringify(data));
+                }, function(err) {
+                    console.log("RPC error: " + JSON.stringify(err));
+                });
             },
             fhandleIceCandidate(pcde) {
                 const toUserId = pcde.userId;
@@ -353,6 +354,10 @@
             getAvatar(participant) {
                 return participant.avatar;
             },
+
+            onExistingParticipants(message) {
+                console.log("onExistingParticipants", message)
+            }
         },
 
         mounted() {
@@ -369,57 +374,7 @@
               4.  Exchange information about media and client capability, such as resolution and codecs.
               5.  Communicate streaming audio, video or data.
              */
-
-            this.signalingSubscription = this.centrifuge.subscribe("signaling"+this.chatId, (rawMessage) => {
-                console.debug("Received raw message", rawMessage);
-                // here we will process signaling messages
-                if (this.isMyMessage(getData(rawMessage))) {
-                    console.debug("Skipping my message", rawMessage);
-                    return
-                }
-                const message = getProperData(rawMessage);
-
-                console.log('Client received foreign presonal message:', message);
-
-                const pcde = this.lookupPeerConnectionData(getData(rawMessage));
-
-                if (!pcde){
-                    console.warn("Cannot find remote connection data for ", rawMessage, " among ", this.remoteConnectionData)
-                    return;
-                }
-                const pc = pcde.peerConnection;
-
-
-                // handle broadcast messages
-                if (message.type === EVENT_HELLO) {
-                    this.maybeStart(pcde);
-                    return;
-                } else if (message.type === EVENT_BYE) {
-                    this.handleRemoteHangup(pcde);
-                    return;
-                }
-
-
-                // handle personal messages
-                if (this.shouldSkipNonMineMessage(message)) {
-                    console.debug("Skipping message not for me but for", message.toUserId);
-                    return;
-                }
-                if (message.type === EVENT_OFFER && pc) {
-                    pc.setRemoteDescription(new RTCSessionDescription(message.value));
-                    this.doAnswer(pcde);
-                } else if (message.type === EVENT_ANSWER && pc) {
-                    console.debug("setting RemoteDescription");
-                    pc.setRemoteDescription(new RTCSessionDescription(message.value));
-                } else if (message.type === EVENT_CANDIDATE && pc) {
-                    console.log("Handling remote ICE candidate for ", pcde.userId);
-                    var candidate = new RTCIceCandidate({
-                        sdpMLineIndex: message.label,
-                        candidate: message.candidate
-                    });
-                    pc.addIceCandidate(candidate);
-                }
-            });
+            bus.$on(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
 
             this.getWebRtcConfiguration();
         },
@@ -427,15 +382,14 @@
         beforeDestroy() {
             console.log("Cleaning up");
             this.hangupAll();
-            this.signalingSubscription.unsubscribe();
             bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, true));
 
             this.prevVideoPaneSize=null;
-            this.signalingSubscription = null;
             this.pcConfig = null;
             this.localStream = null;
             this.localVideo = null;
             this.remoteConnectionData = [];
+            bus.$off(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
         },
 
         watch: {

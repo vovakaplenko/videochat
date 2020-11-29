@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/guregu/null"
 	uberCompat "github.com/nkonev/jaeger-uber-propagation-compat/propagation"
@@ -80,7 +81,7 @@ func (rc RestClient) GetUsers(userIds []int64, c context.Context) ([]*dto.User, 
 	defer resp.Body.Close()
 	code := resp.StatusCode
 	if code != 200 {
-		Logger.Warningln("Users response responded non-200 code: ", code)
+		Logger.Warningln("aaa response responded non-200 code: ", code)
 		return nil, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
@@ -111,7 +112,7 @@ func convertToParticipant(user *name_nkonev_aaa.UserDto) dto.User {
 	}
 }
 
-func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUrl string) error {
+func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUrl string, roomId int64, userId string) error {
 	contentType := "application/json;charset=UTF-8"
 	requestHeaders := map[string][]string{
 		"Accept-Encoding": {"gzip, deflate"},
@@ -119,7 +120,7 @@ func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUr
 		"Content-Type":    {contentType},
 	}
 
-	fullUrl := videoSelectedUrl
+	fullUrl := videoSelectedUrl + fmt.Sprintf("?roomId=%v&userSessionId=%v", roomId, userId)
 
 	parsedUrl, err := url.Parse(fullUrl)
 	if err != nil {
@@ -147,7 +148,7 @@ func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUr
 	defer resp.Body.Close()
 	code := resp.StatusCode
 	if code != 200 {
-		Logger.Warningln("Users response responded non-200 code: ", code)
+		Logger.Warningln("video responded non-200 code: ", code)
 		return err
 	}
 

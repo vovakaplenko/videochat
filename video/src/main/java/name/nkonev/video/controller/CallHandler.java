@@ -25,7 +25,10 @@ public class CallHandler  {
   private RoomManager roomManager;
 
   @PostMapping(INVOKE)
-  public void invoke(@RequestBody EmbeddedPayload invokeDto) {
+  public void invoke(@RequestBody AuthData invokeDto, @RequestParam Long roomId, @RequestParam String userSessionId ) {
+    // TODO refine
+    invokeDto.setRoomId(roomId);
+    invokeDto.setUserSessionId(userSessionId);
     if (invokeDto instanceof JoinRoomDto) {
       joinRoom((JoinRoomDto) invokeDto);
     } if (invokeDto instanceof ReceiveVideoFromDto) {

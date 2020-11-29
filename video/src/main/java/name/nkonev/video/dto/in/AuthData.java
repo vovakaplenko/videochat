@@ -1,8 +1,18 @@
 package name.nkonev.video.dto.in;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import java.util.Objects;
 
-public abstract class AuthData implements EmbeddedPayload {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = JoinRoomDto.class, name = "joinRoom"),
+        @JsonSubTypes.Type(value = LeaveRoomDto.class, name = "leaveRoom"),
+        @JsonSubTypes.Type(value = OnIceCandidateDto.class, name = "onIceCandidate"),
+        @JsonSubTypes.Type(value = ReceiveVideoFromDto.class, name = "receiveVideoFrom")
+})
+public abstract class AuthData {
     protected String userSessionId;
     protected Long roomId;
 

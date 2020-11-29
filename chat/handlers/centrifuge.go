@@ -194,8 +194,7 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 
 		// Set Publish Handler to react on every channel Publication sent by client.
 		// Inside this method you can validate client permissions to publish into
-		// channel. But in our simple chat app we allow everyone to publish into
-		// any channel.
+		// channel.
 		client.On().Publish(func(e centrifuge.PublishEvent) centrifuge.PublishReply {
 			Logger.Printf("client %v publishes into channel %s: %s", creds.UserID, e.Channel, string(e.Data))
 			message, err := modifyMessage(e.Data, e.Info.GetUser(), e.Info.GetClient())
@@ -207,11 +206,6 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 		})
 
 		client.On().RPC(func(event centrifuge.RPCEvent) centrifuge.RPCReply {
-			if event.Method != "invokeVideo" {
-				return centrifuge.RPCReply{
-					Error: centrifuge.ErrorMethodNotFound,
-				}
-			} else {
 				var v = &WithChatIdData{}
 				if err := json.Unmarshal(event.Data, v); err != nil {
 					Logger.Errorf("Error during extract chatId %v %v", string(event.Data), err)
@@ -228,7 +222,8 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 						Error: centrifuge.ErrorInternal,
 					}
 				}
-				err = restClient.InvokeVideo(event.Data, context.Background(), videoUrl)
+
+				err = restClient.InvokeVideo(event.Data, context.Background(), videoUrl, v.ChatId, creds.UserID)
 				if err != nil {
 					Logger.Errorf("Error during invoke video with data %v %v", string(event.Data), err)
 					return centrifuge.RPCReply{
@@ -237,7 +232,7 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 				} else {
 					return centrifuge.RPCReply{}
 				}
-			}
+
 		})
 
 		// Set Disconnect Handler to react on client disconnect events.
