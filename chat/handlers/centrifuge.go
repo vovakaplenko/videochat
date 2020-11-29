@@ -223,6 +223,7 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 					}
 				}
 
+				Logger.Infof("browser -> video roomId=%v, userId=%v, body=%v", v.ChatId, creds.UserID, string(event.Data))
 				err = restClient.InvokeVideo(event.Data, context.Background(), videoUrl, v.ChatId, creds.UserID)
 				if err != nil {
 					Logger.Errorf("Error during invoke video with data %v %v", string(event.Data), err)

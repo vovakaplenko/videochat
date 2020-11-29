@@ -12,7 +12,7 @@ import bus, {
   MESSAGE_EDITED,
   UNREAD_MESSAGES_CHANGED,
   USER_PROFILE_CHANGED,
-  CHANGE_WEBSOCKET_STATUS, LOGGED_OUT, LOGGED_IN, VIDEO_EXISTING_PARTICIPANTS
+  CHANGE_WEBSOCKET_STATUS, LOGGED_OUT, LOGGED_IN, VIDEO_EXISTING_PARTICIPANTS, VIDEO_NEW_PARTICIPANT_ARRIVED
 } from './bus';
 import store, {UNSET_USER} from './store'
 import router from './router.js'
@@ -80,6 +80,8 @@ const vm = new Vue({
       } // video messages
       else if (getData(ctx).type === 'existingParticipants') {
         bus.$emit(VIDEO_EXISTING_PARTICIPANTS, getData(ctx));
+      } else if (getData(ctx).type === 'newParticipantArrived') {
+        bus.$emit(VIDEO_NEW_PARTICIPANT_ARRIVED, getData(ctx));
       }
 
     });

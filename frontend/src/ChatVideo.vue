@@ -17,17 +17,19 @@
     import {GET_USER} from "./store";
     import bus, {
         CHANGE_PHONE_BUTTON, USER_PROFILE_CHANGED, VIDEO_EXISTING_PARTICIPANTS,
-        VIDEO_LOCAL_ESTABLISHED
+        VIDEO_LOCAL_ESTABLISHED, VIDEO_NEW_PARTICIPANT_ARRIVED
     } from "./bus";
     import {phoneFactory} from "./changeTitle";
     import axios from "axios";
     import Vue from 'vue'
 
-    const EVENT_CANDIDATE = 'candidate';
-    const JOIN_ROOM = 'joinRoom';
+    const EVENT_CANDIDATE = 'onIceCandidate';
     const EVENT_BYE = 'bye';
     const EVENT_OFFER = 'offer';
     const EVENT_ANSWER = 'answer';
+
+    const JOIN_ROOM = 'joinRoom';
+    const NOTIFY_ABOUT_JOIN = 'notifyAboutJoin';
 
     export default {
         data() {
@@ -152,7 +154,7 @@
                 }
                 this.sendMessage({type: JOIN_ROOM})
             },
-
+            // starts other user's connection
             maybeStart(rcde){
                 console.log('>>>>>> starting peer connection for', rcde.userId);
 
@@ -357,8 +359,13 @@
 
             onExistingParticipants(message) {
                 console.log("onExistingParticipants", message);
-
-            }
+                this.sendMessage({type: NOTIFY_ABOUT_JOIN})
+            },
+            onNewParticipantArrived(message) {
+                console.log("onNewParticipantArrived", message);
+                let rcde = this.lookupPeerConnectionDataByUserId(message.userSessionId);
+                this.maybeStart(rcde);
+            },
         },
 
         mounted() {
@@ -376,6 +383,7 @@
               5.  Communicate streaming audio, video or data.
              */
             bus.$on(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
+            bus.$on(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived)
 
             this.getWebRtcConfiguration();
         },
@@ -390,7 +398,9 @@
             this.localStream = null;
             this.localVideo = null;
             this.remoteConnectionData = [];
+
             bus.$off(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
+            bus.$off(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived)
         },
 
         watch: {

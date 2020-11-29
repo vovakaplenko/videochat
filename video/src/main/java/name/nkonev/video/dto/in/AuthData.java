@@ -8,6 +8,7 @@ import java.util.Objects;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = JoinRoomDto.class, name = "joinRoom"),
+        @JsonSubTypes.Type(value = NotifyAboutJoinRoomDto.class, name = "notifyAboutJoin"),
         @JsonSubTypes.Type(value = LeaveRoomDto.class, name = "leaveRoom"),
         @JsonSubTypes.Type(value = OnIceCandidateDto.class, name = "onIceCandidate"),
         @JsonSubTypes.Type(value = ReceiveVideoFromDto.class, name = "receiveVideoFrom")

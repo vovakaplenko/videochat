@@ -4,6 +4,7 @@ import (
 	"github.com/centrifugal/centrifuge"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
+	. "nkonev.name/chat/logger"
 )
 
 type VideoHandler struct {
@@ -24,6 +25,7 @@ func (h VideoHandler) SendToUser(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	Logger.Infof("video -> browser userId=%v, body=%v", userId, string(body))
 	_, err = h.centrifuge.Publish(participantChannel, body)
 	return err
 }

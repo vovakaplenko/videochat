@@ -48,9 +48,8 @@ public class Room implements Closeable {
   public UserSession join(String userSessionId) {
     log.info("ROOM {}: adding participant {}", this.roomId, userSessionId);
     final UserSession participant = new UserSession(userSessionId, roomId, this.pipeline, this.chatRequestService);
-    sendParticipantNamesTo(participant);
-    joinRoom(participant);
     participants.put(participant.getUserSessionId(), participant);
+    sendParticipantNamesTo(participant);
     return participant;
   }
 
@@ -60,9 +59,12 @@ public class Room implements Closeable {
     user.close();
   }
 
-  private void joinRoom(UserSession newParticipant) {
+  public void notifyOtherParticipants(UserSession newParticipant) {
     log.debug("ROOM {}: notifying other participants of new participant {}", roomId, newParticipant.getUserSessionId());
     for (final UserSession participant : participants.values()) {
+      if (participant.getUserSessionId().equals(newParticipant.getUserSessionId())) {
+        continue;
+      }
       try {
         participant.sendMessage(new NewParticipantArrivedDto(newParticipant.getUserSessionId()));
       } catch (final RuntimeException e) {
@@ -95,7 +97,6 @@ public class Room implements Closeable {
 
   private void sendParticipantNamesTo(UserSession user)  {
     final List<String> participantsArray = participants.values().stream()
-            .filter(userSession -> user.getUserSessionId() != null && !user.getUserSessionId().equals(userSession.getUserSessionId()))
             .map(UserSession::getUserSessionId)
             .collect(Collectors.toList());
     log.debug("PARTICIPANT {}: sending a list of {} participants", user.getUserSessionId(), participantsArray.size());

@@ -10,6 +10,7 @@
     "@mdi/font": "^5.3.45",
     "axios": "^0.19.2",
     "centrifuge": "^2.6.2",
+    "kurento-utils": "^6.15.0",
     "lodash": "^4.17.15",
     "splitpanes": "^2.2.1",
     "typeface-roboto": "0.0.75",

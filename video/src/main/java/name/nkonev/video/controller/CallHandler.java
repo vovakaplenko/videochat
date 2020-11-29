@@ -31,6 +31,8 @@ public class CallHandler  {
     invokeDto.setUserSessionId(userSessionId);
     if (invokeDto instanceof JoinRoomDto) {
       joinRoom((JoinRoomDto) invokeDto);
+    } if (invokeDto instanceof NotifyAboutJoinRoomDto) {
+      notifyAboutJoin((NotifyAboutJoinRoomDto)invokeDto);
     } if (invokeDto instanceof ReceiveVideoFromDto) {
       receiveVideoFrom((ReceiveVideoFromDto) invokeDto);
     } if (invokeDto instanceof LeaveRoomDto) {
@@ -97,6 +99,13 @@ public class CallHandler  {
     Room room = roomManager.getRoom(roomId);
     final UserSession user = room.join(userSessionId);
   }
+
+  private void notifyAboutJoin(NotifyAboutJoinRoomDto invokeDto) {
+    Room room = roomManager.getRoom(invokeDto.getRoomId());
+    final UserSession user = room.getUserSession(invokeDto.getUserSessionId());
+    room.notifyOtherParticipants(user);
+  }
+
 
   private void leaveRoom(Long roomId, String userSessionId) {
     final Room room = roomManager.getRoom(roomId);
