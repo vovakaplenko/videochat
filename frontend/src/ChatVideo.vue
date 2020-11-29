@@ -356,7 +356,8 @@
             },
 
             onExistingParticipants(message) {
-                console.log("onExistingParticipants", message)
+                console.log("onExistingParticipants", message);
+
             }
         },
 

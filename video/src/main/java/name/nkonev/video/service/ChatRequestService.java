@@ -33,7 +33,7 @@ public class ChatRequestService {
                     objectMapper.writeValueAsBytes(data)
             );
             final Request request = new Request.Builder()
-                    .url(chatUrl + "?user=" + sessionId)
+                    .url(chatUrl + "?toUser=" + sessionId)
                     .post(requestBody)
                     .build();
             final Response response = okHttpClient.newCall(request).execute();

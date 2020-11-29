@@ -17,7 +17,7 @@ func NewVideoHandler(centrifuge *centrifuge.Node) VideoHandler {
 }
 
 func (h VideoHandler) SendToUser(c echo.Context) error {
-	userId := c.QueryParam("user")
+	userId := c.QueryParam("toUser")
 	participantChannel := h.centrifuge.PersonalChannel(userId)
 
 	body, err := ioutil.ReadAll(c.Request().Body)
