@@ -63,7 +63,7 @@ public class CallHandler  {
       return;
     }
 
-    final String sdpOffer = jsonMessage.getSdpOffer();
+    final String sdpOffer = jsonMessage.getSdpOffer().toString();
     user.receiveVideoFrom(sender, sdpOffer);
   }
 

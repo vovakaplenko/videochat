@@ -1,15 +1,24 @@
 package name.nkonev.video.dto.in;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import java.io.IOException;
 import java.util.Objects;
 
 public class ReceiveVideoFromDto extends AuthData {
     private String senderSessionId;
-    private String sdpOffer;
+
+    private JsonNode sdpOffer;
 
     public ReceiveVideoFromDto() {
     }
 
-    public ReceiveVideoFromDto(String userSessionId, Long roomId, String senderSessionId, String sdpOffer) {
+    public ReceiveVideoFromDto(String userSessionId, Long roomId, String senderSessionId, JsonNode sdpOffer) {
         this.senderSessionId = senderSessionId;
         this.sdpOffer = sdpOffer;
         setUserSessionId(userSessionId);
@@ -24,11 +33,11 @@ public class ReceiveVideoFromDto extends AuthData {
         this.senderSessionId = senderSessionId;
     }
 
-    public String getSdpOffer() {
+    public JsonNode getSdpOffer() {
         return sdpOffer;
     }
 
-    public void setSdpOffer(String sdpOffer) {
+    public void setSdpOffer(JsonNode sdpOffer) {
         this.sdpOffer = sdpOffer;
     }
 

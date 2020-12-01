@@ -25,7 +25,7 @@
 
     const EVENT_CANDIDATE = 'onIceCandidate';
     const EVENT_BYE = 'bye';
-    const EVENT_OFFER = 'offer';
+    const RECEIVE_VIDEO_FROM = 'receiveVideoFrom';
     const EVENT_ANSWER = 'answer';
 
     const JOIN_ROOM = 'joinRoom';
@@ -249,10 +249,12 @@
                     if (event.candidate) {
                         this.sendMessage({
                             type: EVENT_CANDIDATE,
-                            label: event.candidate.sdpMLineIndex,
-                            id: event.candidate.sdpMid,
-                            candidate: event.candidate.candidate,
-                            toUserId: toUserId
+                            candidate: {
+                                sdpMLineIndex: event.candidate.sdpMLineIndex,
+                                sdpMid: event.candidate.sdpMid,
+                                candidate: event.candidate.candidate,
+                            },
+                            fromUserSessionId: toUserId
                         });
                     } else {
                         console.log('End of candidates.', event);
@@ -280,7 +282,7 @@
                     }
                     switch (type) {
                         case 'offer':
-                            this.sendMessage({type: EVENT_OFFER, value: sessionDescription, toUserId: toUserId});
+                            this.sendMessage({type: RECEIVE_VIDEO_FROM, sdpOffer: sessionDescription, senderSessionId: toUserId});
                             break;
                         case 'answer':
                             this.sendMessage({type: EVENT_ANSWER, value: sessionDescription, toUserId: toUserId});
