@@ -364,6 +364,7 @@
             onNewParticipantArrived(message) {
                 console.log("onNewParticipantArrived", message);
                 let rcde = this.lookupPeerConnectionDataByUserId(message.userSessionId);
+                console.log("found rcde", rcde);
                 this.maybeStart(rcde);
             },
         },
