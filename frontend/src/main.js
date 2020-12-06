@@ -78,10 +78,8 @@ const vm = new Vue({
         const d = getProperData(ctx);
         bus.$emit(USER_PROFILE_CHANGED, d);
       } // video messages
-      else if (getData(ctx).type === 'existingParticipants') {
-        bus.$emit(VIDEO_EXISTING_PARTICIPANTS, getData(ctx));
-      } else if (getData(ctx).type === 'newParticipantArrived') {
-        bus.$emit(VIDEO_NEW_PARTICIPANT_ARRIVED, getData(ctx));
+      else if (getData(ctx).type.startsWith("video")) {
+        bus.$emit(getData(ctx).type, getData(ctx));
       }
 
     });

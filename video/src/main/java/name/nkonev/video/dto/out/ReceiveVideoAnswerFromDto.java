@@ -13,7 +13,7 @@ public class ReceiveVideoAnswerFromDto extends WithUserSession {
 
     @Override
     public String getType() {
-        return "receiveVideoAnswer";
+        return "videoReceiveVideoAnswer";
     }
 
     private String sdpAnswer;

@@ -1,35 +1,33 @@
 <template>
     <v-col cols="12" class="ma-0 pa-0" id="video-container">
-        <div class="video-container-element video-container-element-my">
+        <!--<div class="video-container-element video-container-element-my">
             <video id="localVideo" autoPlay playsInline></video>
             <p class="video-container-element-caption">{{ currentUser.login }}</p>
         </div>
         <div class="video-container-element" v-for="(item, index) in properParticipants" :key="item.id">
             <video :id="getRemoteVideoId(item.id)" autoPlay playsInline :class="otherParticipantsClass" :poster="getAvatar(item)"></video>
             <p class="video-container-element-caption">{{ getLogin(item) }}</p>
-        </div>
+        </div>-->
     </v-col>
 </template>
 
 <script>
-    import {getData, getProperData, setProperData} from "./centrifugeConnection";
     import {mapGetters} from "vuex";
     import {GET_USER} from "./store";
-    import bus, {
-        CHANGE_PHONE_BUTTON, USER_PROFILE_CHANGED, VIDEO_EXISTING_PARTICIPANTS,
-        VIDEO_LOCAL_ESTABLISHED, VIDEO_NEW_PARTICIPANT_ARRIVED
-    } from "./bus";
+    import bus, {CHANGE_PHONE_BUTTON} from "./bus";
     import {phoneFactory} from "./changeTitle";
     import axios from "axios";
-    import Vue from 'vue'
+    import Participant from "./ChatVideoParticipant"
+    import {WebRtcPeer} from "kurento-utils"
 
-    const EVENT_CANDIDATE = 'onIceCandidate';
-    const EVENT_BYE = 'bye';
-    const RECEIVE_VIDEO_FROM = 'receiveVideoFrom';
-    const EVENT_ANSWER = 'answer';
-
-    const JOIN_ROOM = 'joinRoom';
     const NOTIFY_ABOUT_JOIN = 'notifyAboutJoin';
+
+    // input events
+    const VIDEO_EXISTING_PARTICIPANTS = 'videoExistingParticipants'
+    const VIDEO_NEW_PARTICIPANT_ARRIVED = 'videoNewParticipantArrived'
+    const VIDEO_ICE_CANDIDATE = 'videoIceCandidate'
+    const VIDEO_PARTICIPANT_LEFT = 'videoParticipantLeft'
+    const VIDEO_RECEIVE_VIDEO_ANSWER = 'videoReceiveVideoAnswer'
 
     export default {
         data() {
@@ -38,39 +36,20 @@
 
                 pcConfig: null,
 
-                localStream: null,
-                localVideo: null,
-
-                remoteConnectionData: [
-                    // userId: number
-                    // peerConnection: RTCPeerConnection
-                    // remoteVideo: html element
-                ],
+                name: null,
+                participants: {},
+                container: null,
             }
         },
         props: ['chatDto'],
         computed: {
             chatId() {
-                return this.$route.params.id
+                const v = this.$route.params.id
+                return parseInt(v);
             },
             ...mapGetters({currentUser: GET_USER}),
-            otherParticipantsClass() {
-                if (!this.localStream) {
-                    return "order-first"
-                } else {
-                    return ""
-                }
-            },
-            properParticipants() {
-                const ppi = this.chatDto.participants.filter(pi => pi.id != this.currentUser.id);
-                console.log("Participant ids except me:", ppi, "my id is", this.currentUser.id);
-                return ppi;
-            },
         },
         methods: {
-            getRemoteVideoId(participantId) {
-                return 'remoteVideo'+participantId;
-            },
             getWebRtcConfiguration() {
                 const localPcConfig = {
                     iceServers: []
@@ -83,275 +62,9 @@
                         this.pcConfig = localPcConfig;
                         console.log("Configured WebRTC servers", this.pcConfig);
                     }
-                    this.initRemoteStructures();
+                    this.registerMe();
                 })
-
             },
-            getRemoteVideoHtml(participantId) {
-                return document.querySelector('#'+this.getRemoteVideoId(participantId));
-            },
-            createAndAddNewRemoteConnectionElement(participantId) {
-                this.remoteConnectionData.push({
-                    userId: participantId,
-                    remoteVideo: this.getRemoteVideoHtml(participantId)
-                });
-            },
-            initRemoteStructures() {
-                console.log("Initializing remote videos");
-                for (let pi of this.properParticipants) {
-                    this.createAndAddNewRemoteConnectionElement(pi.id);
-                }
-
-                this.initDevices();
-            },
-            initDevices() {
-                if (!navigator.mediaDevices) {
-                    alert('There are no media devices');
-                    this.gotLocalStream(null);
-                    return
-                }
-                navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: true
-                })
-                    .then(this.gotLocalStream)
-                    .catch((e) => {
-                        alert('getUserMedia() error: ' + e.name);
-                    });
-            },
-            gotLocalStream(stream) {
-                if (stream) {
-                    console.log('Adding local stream.');
-                    this.localStream = stream;
-                    this.localVideo.srcObject = stream;
-                }
-
-                bus.$emit(VIDEO_LOCAL_ESTABLISHED);
-                bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, false))
-
-                this.initConnections();
-            },
-
-            initializeRemoteConnectionElement(rcde) {
-                console.log('>>>>>> creating peer connection, localstream=', this.localStream, "from me to", rcde.userId);
-                const pc = this.createPeerConnection(rcde);
-
-                if (this.localStream) {
-                    pc.addStream(this.localStream);
-                }
-                rcde.peerConnection = pc;
-            },
-            initConnections(){
-                if (!this.localStream) {
-                    // TODO maybe retry
-                    console.warn("localStream still not set -> we unable to initialize connections");
-                } else {
-                    console.log('Initializing connections from local stream', this.localStream);
-                }
-                // save this pc to array
-                for (const rcde of this.remoteConnectionData) {
-                    this.initializeRemoteConnectionElement(rcde);
-                }
-                this.sendMessage({type: JOIN_ROOM})
-            },
-            // starts other user's connection
-            maybeStart(rcde){
-                console.log('>>>>>> starting peer connection for', rcde.userId);
-
-                this.stop(rcde);
-                const pc = this.createPeerConnection(rcde);
-                console.log('Created RTCPeerConnnection me -> user '+rcde.userId);
-                if (this.localStream) {
-                    // TODO maybe retry
-                    pc.addStream(this.localStream);
-                }
-                rcde.peerConnection = pc;
-                this.doOffer(rcde);
-            },
-            createPeerConnection(rcde) {
-                const remoteVideo = rcde.remoteVideo;
-                try {
-                    const pc = new RTCPeerConnection(this.pcConfig);
-                    pc.onicecandidate = this.fhandleIceCandidate(rcde);
-                    if ("ontrack" in pc) {
-                        pc.ontrack = this.fhandleRemoteTrackAdded(remoteVideo);
-                    } else {
-                        pc.onaddstream = this.fhandleRemoteStreamAdded(remoteVideo);
-                    }
-                    pc.onremovestream = this.handleRemoteStreamRemoved;
-                    return pc;
-                } catch (e) {
-                    console.log('Failed to create PeerConnection, exception: ' + e.message);
-                    alert('Cannot create RTCPeerConnection object.');
-                }
-            },
-
-            doAnswer(pcde){
-                console.log('Sending answer to peer ' + pcde.userId);
-                const pc = pcde.peerConnection;
-                pc.createAnswer().then(
-                    this.fsetLocalDescriptionAndSendMessage(pcde),
-                    this.fonCreateSessionDescriptionError(pcde)
-                );
-            },
-            doOffer(pcde) {
-                console.log('Sending offer to peer ' + pcde.userId);
-                const pc = pcde.peerConnection;
-                pc.createOffer(this.fsetLocalDescriptionAndSendMessage(pcde), this.fhandleCreateOfferError(pcde));
-            },
-            handleRemoteHangup(pcde) {
-                console.log('Session terminated for ' + pcde.userId);
-                this.stop(pcde);
-            },
-            fhandleRemoteStreamAdded(remoteVideo) {
-                return (event) => {
-                    console.log('Remote stream added.', event);
-                    remoteVideo.srcObject = event.stream;
-                }
-            },
-            fhandleRemoteTrackAdded(remoteVideo) {
-                return (event) => {
-                    console.log('Remote track added.', event);
-                    remoteVideo.srcObject = event.streams[0];
-                }
-            },
-            handleRemoteStreamRemoved (event) {
-                console.log('Remote stream removed. Event: ', event);
-            },
-            stop(pcde) {
-                if (pcde.peerConnection) {
-                    console.log("Stopping peer connection to user " + pcde.userId);
-                    pcde.peerConnection.close();
-                } else {
-                    console.log("Didn't stopped peer connection to user " + pcde.userId);
-                }
-                pcde.peerConnection = null;
-            },
-            hangupAll() {
-                console.log('Hanging up.');
-                for (const pcde of this.remoteConnectionData) {
-                    this.stop(pcde);
-                }
-                this.sendMessage({type: EVENT_BYE});
-            },
-            sendMessage(message) {
-                console.log('Client sending message: ', message);
-                this.centrifuge.rpc(message).then(function(data){
-                    console.log("RPC response data: " + JSON.stringify(data));
-                }, function(err) {
-                    console.log("RPC error: " + JSON.stringify(err));
-                });
-            },
-            fhandleIceCandidate(pcde) {
-                const toUserId = pcde.userId;
-                return (event) => {
-                    console.log('icecandidate event: ', event);
-                    if (event.candidate) {
-                        this.sendMessage({
-                            type: EVENT_CANDIDATE,
-                            candidate: {
-                                sdpMLineIndex: event.candidate.sdpMLineIndex,
-                                sdpMid: event.candidate.sdpMid,
-                                candidate: event.candidate.candidate,
-                            },
-                            fromUserSessionId: toUserId
-                        });
-                    } else {
-                        console.log('End of candidates.', event);
-                    }
-                }
-            },
-            fhandleCreateOfferError(pcde) {
-                return (event) => {
-                    console.log('createOffer() error: ', event);
-                    this.onUnknownErrorReset(pcde);
-                }
-            },
-
-            fsetLocalDescriptionAndSendMessage(pcde) {
-                return (sessionDescription) => {
-                    console.log('setting setLocalDescription and sending it', sessionDescription);
-                    const pc = pcde.peerConnection;
-                    pc.setLocalDescription(sessionDescription);
-                    const toUserId = pcde.userId;
-
-                    const type = sessionDescription.type;
-                    if (!type) {
-                        console.error("Null type in setLocalAndSendMessage");
-                        return
-                    }
-                    switch (type) {
-                        case 'offer':
-                            this.sendMessage({type: RECEIVE_VIDEO_FROM, sdpOffer: sessionDescription, senderSessionId: toUserId});
-                            break;
-                        case 'answer':
-                            this.sendMessage({type: EVENT_ANSWER, value: sessionDescription, toUserId: toUserId});
-                            break;
-                        default:
-                            console.error("Unknown type '"+type+"' in setLocalAndSendMessage");
-                    }
-                }
-            },
-
-            fonCreateSessionDescriptionError(pcde) {
-                return (error) => {
-                    console.error('Failed to create session description: ' + error.toString());
-                    this.onUnknownErrorReset(pcde);
-                }
-            },
-
-            onUnknownErrorReset(pcde) {
-                console.log("Resetting state on error");
-                this.localStream = null;
-
-                pcde.peerConnection = null;
-
-                console.log("Initializing devices again");
-                this.initRemoteStructures();
-            },
-
-            isMyMessage (message) {
-                return message.metadata && this.centrifugeSessionId == message.metadata.originatorClientId
-            },
-            shouldSkipNonMineMessage(message) {
-                return message.toUserId != this.currentUser.id;
-            },
-            lookupPeerConnectionDataByUserId(userId) {
-                console.log("Using remoteConnectionData", this.remoteConnectionData);
-                for (const pcde of this.remoteConnectionData) {
-                    if (pcde.userId == userId) {
-                        return pcde;
-                    }
-                }
-                return null;
-            },
-            lookupPeerConnectionData(message) {
-                const originatorUserId = message.metadata.originatorUserId;
-                return this.lookupPeerConnectionDataByUserId(originatorUserId);
-            },
-
-            stopStreamedVideo(videoElem) {
-                if (!videoElem) {
-                    console.warn("Didn't stopped html tracks because videoElem is null")
-                    return
-                }
-
-                console.log("Stopping html tracks");
-                const stream = videoElem.srcObject;
-                if (!stream) {
-                    console.warn("Didn't stopped html tracks because stream is null")
-                    return
-                }
-
-                const tracks = stream.getTracks();
-
-                tracks.forEach(function(track) {
-                    track.stop();
-                });
-
-                videoElem.srcObject = null;
-            },
-
             getLogin(participant) {
                 return participant.login;
             },
@@ -359,20 +72,118 @@
                 return participant.avatar;
             },
 
-            onExistingParticipants(message) {
-                console.log("onExistingParticipants", message);
+            registerMe() {
+                var message = {
+                    type : 'joinRoom',
+                }
+                this.sendMessage(message);
+            },
+            sendMessage(message) {
+                message = {...message, chatId: this.chatId};
+                console.debug('Sending message: ' + JSON.stringify(message));
+                this.centrifuge.rpc(message).then(function(data){
+                    console.debug("RPC response data: " + JSON.stringify(data));
+                }, function(err) {
+                    console.debug("RPC error: " + JSON.stringify(err));
+                });
+            },
+            onExistingParticipants(msg) {
+                const constraints = {
+                    audio : true,
+                    video : {
+                        mandatory : {
+                            maxWidth : 320,
+                            maxFrameRate : 15,
+                            minFrameRate : 15
+                        }
+                    }
+                };
+                const name = this.currentUser.id;
+                console.log(name + " registered in room " + this.chatId);
+                const participant = new Participant(name, this.sendMessage, this.container);
+                this.participants[name] = participant;
+                const video = participant.getVideoElement();
+
+                const options = {
+                    localVideo: video,
+                    mediaConstraints: constraints,
+                    onicecandidate: participant.onIceCandidate.bind(participant)
+                }
+                participant.rtcPeer = new WebRtcPeer.WebRtcPeerSendonly(options,
+                    function (error) {
+                        if (error) {
+                            return console.error(error);
+                        }
+                        this.generateOffer(participant.offerToReceiveVideo.bind(participant));
+                    });
+                //console.log("msg=", msg);
                 this.sendMessage({type: NOTIFY_ABOUT_JOIN})
+                msg.participantSessions.forEach(this.receiveVideo);
             },
-            onNewParticipantArrived(message) {
-                console.log("onNewParticipantArrived", message);
-                let rcde = this.lookupPeerConnectionDataByUserId(message.userSessionId);
-                console.log("found rcde", rcde);
-                this.maybeStart(rcde);
+            receiveVideo(sender) {
+                console.log("receive video for participant", sender)
+                let maybeParticipant = this.participants[sender];
+                if (!maybeParticipant) { // TODO here is I reuse the existing participant, originally it always adds a new participant
+                    maybeParticipant = new Participant(sender, this.sendMessage, this.container);
+                    this.participants[sender] = maybeParticipant;
+                }
+                // TODO here we can create two elements with the same id
+                //else {
+                //     return
+                // }
+                var participant = maybeParticipant;
+                var video = participant.getVideoElement();
+
+                var options = {
+                    remoteVideo: video,
+                    onicecandidate: participant.onIceCandidate.bind(participant)
+                }
+                participant.rtcPeer = new WebRtcPeer.WebRtcPeerRecvonly(options,
+                    function (error) {
+                        if(error) {
+                            return console.error(error);
+                        }
+                        this.generateOffer(participant.offerToReceiveVideo.bind(participant));
+                    });
             },
+            onNewParticipantArrived(request) {
+                console.debug("User "+request.userSessionId + " arrived")
+                this.receiveVideo(request.userSessionId);
+            },
+            receiveVideoResponse(result) {
+                const maybeParticipant = this.participants[result.userSessionId]
+                if (!maybeParticipant) {
+                    console.warn("userSessionId " + result.userSessionId + " for receiveVideoResponse still not present", this.participants)
+                } else {
+                    maybeParticipant.rtcPeer.processAnswer(result.sdpAnswer, function (error) {
+                        if (error) return console.error(error);
+                    });
+                }
+            },
+            handleIceCandidate(parsedMessage) {
+                const maybeParticipant = this.participants[parsedMessage.userSessionId];
+                if (!maybeParticipant) {
+                    console.warn("userSessionId " + parsedMessage.userSessionId + " for handleIceCandidate still not present", this.participants)
+                } else {
+                    maybeParticipant.rtcPeer.addIceCandidate(parsedMessage.candidate, function (error) {
+                        if (error) {
+                            console.error("Error adding candidate: " + error);
+                            return;
+                        }
+                    });
+                }
+            },
+            onParticipantLeft(request) {
+                console.log('Participant ' + request.userSessionId + ' left');
+                var participant = this.participants[request.userSessionId];
+                participant.dispose();
+                delete this.participants[request.userSessionId];
+            }
         },
 
         mounted() {
-            this.localVideo = document.querySelector('#localVideo');
+            // this.localVideo = document.querySelector('#localVideo');
+            this.container = document.getElementById('video-container');
 
             /*
              * https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
@@ -387,6 +198,9 @@
              */
             bus.$on(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
             bus.$on(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived)
+            bus.$on(VIDEO_RECEIVE_VIDEO_ANSWER, this.receiveVideoResponse);
+            bus.$on(VIDEO_ICE_CANDIDATE, this.handleIceCandidate);
+            bus.$on(VIDEO_PARTICIPANT_LEFT, this.onParticipantLeft);
 
             this.getWebRtcConfiguration();
         },
@@ -398,67 +212,17 @@
 
             this.prevVideoPaneSize=null;
             this.pcConfig = null;
-            this.localStream = null;
-            this.localVideo = null;
-            this.remoteConnectionData = [];
+            // this.localStream = null;
+            // this.localVideo = null;
+            // this.remoteConnectionData = [];
 
             bus.$off(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
-            bus.$off(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived)
+            bus.$off(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived);
+            bus.$off(VIDEO_RECEIVE_VIDEO_ANSWER, this.receiveVideoResponse);
+            bus.$off(VIDEO_ICE_CANDIDATE, this.handleIceCandidate);
+            bus.$off(VIDEO_PARTICIPANT_LEFT, this.onParticipantLeft);
         },
 
-        watch: {
-            'chatDto.participantIds': {
-                handler: function (val, oldVal) {
-                    const addedParticipantIds = val.filter(n => !oldVal.includes(n));
-                    const deletedParticipantIds = oldVal.filter(n => !val.includes(n))
-                    console.info("Added participantIds ", addedParticipantIds, " deleted participantIds ", deletedParticipantIds);
-
-                    // close olds
-                    for (const participantId of deletedParticipantIds) {
-                        const rcde = this.lookupPeerConnectionDataByUserId(participantId);
-                        if (!rcde) {
-                            console.warn("Can't lookup peer connection data by userId ", participantId);
-                            continue;
-                        }
-                        const html = this.getRemoteVideoHtml(rcde.userId);
-                        console.log("Got remote video el", html);
-                        this.stopStreamedVideo(html);
-
-                        this.stop(rcde);
-
-                        // remove it from array
-                        const foundIndex = this.remoteConnectionData.findIndex(value => value.userId === rcde.userId);
-                        if (foundIndex === -1) {
-                            console.warn("Can't find index to remove from participantIds", rcde.userId);
-                            return
-                        }
-                        this.remoteConnectionData.splice(foundIndex, 1);
-                        console.info("Successfully removed PeerConnectionData for user", rcde.userId, this.remoteConnectionData);
-
-                        // delete from page
-                        html.parentElement.removeChild(html);
-                    }
-                    this.$forceUpdate();
-
-                    // bypass reactive effect of rerender remote participants
-                    Vue.nextTick(()=>{
-                        // template already changed, so we need initialize news
-                        for (const participantId of addedParticipantIds) {
-                            this.createAndAddNewRemoteConnectionElement(participantId);
-                            const rcde = this.lookupPeerConnectionDataByUserId(participantId);
-                            if (!rcde) {
-                                console.warn("Can't lookup peer connection data by userId ", participantId);
-                                continue;
-                            }
-                            this.initializeRemoteConnectionElement(rcde);
-                        }
-                    });
-
-                },
-                deep: true
-            },
-
-        },
     }
 </script>
 

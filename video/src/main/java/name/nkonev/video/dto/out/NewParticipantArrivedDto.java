@@ -10,6 +10,6 @@ public class NewParticipantArrivedDto extends WithUserSession{
 
     @Override
     public String getType() {
-        return "newParticipantArrived";
+        return "videoNewParticipantArrived";
     }
 }

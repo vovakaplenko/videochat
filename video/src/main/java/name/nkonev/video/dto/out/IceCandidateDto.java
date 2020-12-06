@@ -14,7 +14,7 @@ public class IceCandidateDto extends WithUserSession {
 
     @Override
     public String getType() {
-        return "iceCandidate";
+        return "videoIceCandidate";
     }
 
     private IceCandidate candidate;

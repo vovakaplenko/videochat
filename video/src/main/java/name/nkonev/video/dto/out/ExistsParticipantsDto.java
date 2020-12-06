@@ -13,7 +13,7 @@ public class ExistsParticipantsDto extends Typed {
 
     @Override
     public String getType() {
-        return "existingParticipants";
+        return "videoExistingParticipants";
     }
 
     private List<String> participantSessions;

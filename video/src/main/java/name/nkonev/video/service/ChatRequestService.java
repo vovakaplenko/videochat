@@ -28,17 +28,19 @@ public class ChatRequestService {
 
     public void sendToWebsocketForSession(String sessionId, Typed data) {
         try {
+            final String body = objectMapper.writeValueAsString(data);
             final RequestBody requestBody = RequestBody.create(
                     MediaType.get("application/json;charset=UTF-8"),
-                    objectMapper.writeValueAsBytes(data)
+                    body
             );
             final Request request = new Request.Builder()
                     .url(chatUrl + "?toUser=" + sessionId)
                     .post(requestBody)
                     .build();
+            LOGGER.debug("Invoking chat {}, body={}", request, body);
             final Response response = okHttpClient.newCall(request).execute();
             final String json = response.body().string();
-            LOGGER.debug("chat response: {}", json);
+            LOGGER.debug("chat response code={}, body={}", response.code(), json);
         } catch (Exception e) {
             LOGGER.error("failed chat invocation", e);
         }

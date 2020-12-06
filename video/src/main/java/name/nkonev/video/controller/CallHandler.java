@@ -25,9 +25,8 @@ public class CallHandler  {
   private RoomManager roomManager;
 
   @PostMapping(INVOKE)
-  public void invoke(@RequestBody AuthData invokeDto, @RequestParam Long roomId, @RequestParam String userSessionId ) {
+  public void invoke(@RequestBody AuthData invokeDto, @RequestParam String userSessionId) {
     // TODO refine
-    invokeDto.setRoomId(roomId);
     invokeDto.setUserSessionId(userSessionId);
     if (invokeDto instanceof JoinRoomDto) {
       joinRoom((JoinRoomDto) invokeDto);
@@ -63,7 +62,7 @@ public class CallHandler  {
       return;
     }
 
-    final String sdpOffer = jsonMessage.getSdpOffer().toString();
+    final String sdpOffer = jsonMessage.getSdpOffer().asText();
     user.receiveVideoFrom(sender, sdpOffer);
   }
 

@@ -120,7 +120,7 @@ func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUr
 		"Content-Type":    {contentType},
 	}
 
-	fullUrl := videoSelectedUrl + fmt.Sprintf("?roomId=%v&userSessionId=%v", roomId, userId)
+	fullUrl := videoSelectedUrl + fmt.Sprintf("?userSessionId=%v", userId)
 
 	parsedUrl, err := url.Parse(fullUrl)
 	if err != nil {

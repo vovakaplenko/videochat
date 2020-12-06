@@ -48,8 +48,8 @@ public class Room implements Closeable {
   public UserSession join(String userSessionId) {
     log.info("ROOM {}: adding participant {}", this.roomId, userSessionId);
     final UserSession participant = new UserSession(userSessionId, roomId, this.pipeline, this.chatRequestService);
-    participants.put(participant.getUserSessionId(), participant);
     sendParticipantNamesTo(participant);
+    participants.put(participant.getUserSessionId(), participant);
     return participant;
   }
 

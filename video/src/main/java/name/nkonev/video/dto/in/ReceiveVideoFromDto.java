@@ -1,17 +1,11 @@
 package name.nkonev.video.dto.in;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class ReceiveVideoFromDto extends AuthData {
-    private String senderSessionId;
+    private String senderSessionId; // from who we receive video
 
     private JsonNode sdpOffer;
 

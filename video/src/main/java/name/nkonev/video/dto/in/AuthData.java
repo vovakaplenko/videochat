@@ -33,6 +33,10 @@ public abstract class AuthData {
         this.roomId = roomId;
     }
 
+    public void setChatId(Long roomId) {
+        this.roomId = roomId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

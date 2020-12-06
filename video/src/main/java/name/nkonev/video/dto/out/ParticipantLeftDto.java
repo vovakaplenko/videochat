@@ -10,6 +10,6 @@ public class ParticipantLeftDto extends WithUserSession {
 
     @Override
     public String getType() {
-        return "participantLeft";
+        return "videoParticipantLeft";
     }
 }
