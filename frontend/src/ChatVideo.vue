@@ -116,7 +116,6 @@
                         }
                         this.generateOffer(participant.offerToReceiveVideo.bind(participant));
                     });
-                //console.log("msg=", msg);
                 bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, false));
                 this.sendMessage({type: NOTIFY_ABOUT_JOIN})
                 msg.participantSessions.forEach(this.receiveVideo);
@@ -124,14 +123,13 @@
             receiveVideo(sender) {
                 console.log("receive video for participant", sender)
                 let maybeParticipant = this.participants[sender];
-                if (!maybeParticipant) { // TODO here is I reuse the existing participant, originally it always adds a new participant
+                if (!maybeParticipant) {
                     maybeParticipant = new Participant(sender, this.sendMessage, this.container);
                     this.participants[sender] = maybeParticipant;
+                } else {
+                    console.warn("Receiving video from myself isn't allowed, return")
+                    return
                 }
-                // TODO here we can create two elements with the same id
-                //else {
-                //     return
-                // }
                 var participant = maybeParticipant;
                 var video = participant.getVideoElement();
 
