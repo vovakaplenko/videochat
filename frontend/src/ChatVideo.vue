@@ -36,7 +36,6 @@
 
                 pcConfig: null,
 
-                name: null,
                 participants: {},
                 container: null,
             }
@@ -189,12 +188,7 @@
              * https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
              * https://www.html5rocks.com/en/tutorials/webrtc/basics/
              * https://codelabs.developers.google.com/codelabs/webrtc-web/#4
-             * WebRTC applications need to do several things:
-              1.  Get streaming audio, video or other data.
-              2.  Get network information such as IP addresses and ports, and exchange this with other WebRTC clients (known as peers) to enable connection, even through NATs and firewalls.
-              3.  Coordinate signaling communication to report errors and initiate or close sessions.
-              4.  Exchange information about media and client capability, such as resolution and codecs.
-              5.  Communicate streaming audio, video or data.
+             * https://habr.com/ru/company/Voximplant/blog/417869/
              */
             bus.$on(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
             bus.$on(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived)
