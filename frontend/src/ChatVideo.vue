@@ -21,6 +21,7 @@
     import {WebRtcPeer} from "kurento-utils"
 
     const NOTIFY_ABOUT_JOIN = 'notifyAboutJoin';
+    const LEAVE_ROOM = 'notifyAboutJoin';
 
     // input events
     const VIDEO_EXISTING_PARTICIPANTS = 'videoExistingParticipants'
@@ -116,6 +117,7 @@
                         this.generateOffer(participant.offerToReceiveVideo.bind(participant));
                     });
                 //console.log("msg=", msg);
+                bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, false));
                 this.sendMessage({type: NOTIFY_ABOUT_JOIN})
                 msg.participantSessions.forEach(this.receiveVideo);
             },
@@ -177,6 +179,15 @@
                 var participant = this.participants[request.userSessionId];
                 participant.dispose();
                 delete this.participants[request.userSessionId];
+            },
+            hangup(){
+                this.sendMessage({
+                    type : LEAVE_ROOM
+                });
+
+                for(const key in this.participants) {
+                    this.participants[key].dispose();
+                }
             }
         },
 
@@ -201,14 +212,12 @@
 
         beforeDestroy() {
             console.log("Cleaning up");
-            this.hangupAll();
+            this.hangup();
             bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, true));
 
             this.prevVideoPaneSize=null;
             this.pcConfig = null;
-            // this.localStream = null;
-            // this.localVideo = null;
-            // this.remoteConnectionData = [];
+            this.participants = {};
 
             bus.$off(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
             bus.$off(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived);
