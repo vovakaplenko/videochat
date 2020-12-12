@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CallHandler  {
 
   private static final Logger log = LoggerFactory.getLogger(CallHandler.class);
-  public static final String INVOKE = "/invoke";
+  private static final String INVOKE = "/invokeOld";
 
   @Autowired
   private RoomManager roomManager;
@@ -45,7 +45,7 @@ public class CallHandler  {
     joinRoom(joinRoomDto.getRoomId(), joinRoomDto.getUserSessionId());
   }
 
-  private void receiveVideoFrom(ReceiveVideoFromDto jsonMessage) {
+  private void receiveVideoFrom(ReceiveVideoFromDto jsonMessage) { // seems it's order to Bob to process the offer
     String userSessionId = jsonMessage.getUserSessionId();
     Long roomId = jsonMessage.getRoomId();
     final Room room = roomManager.getRoom(roomId);

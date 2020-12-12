@@ -1,267 +1,542 @@
 <template>
     <v-col cols="12" class="ma-0 pa-0" id="video-container">
-        <!--<div class="video-container-element video-container-element-my">
+        <div class="video-container-element video-container-element-my">
             <video id="localVideo" autoPlay playsInline></video>
             <p class="video-container-element-caption">{{ currentUser.login }}</p>
         </div>
         <div class="video-container-element" v-for="(item, index) in properParticipants" :key="item.id">
             <video :id="getRemoteVideoId(item.id)" autoPlay playsInline :class="otherParticipantsClass" :poster="getAvatar(item)"></video>
             <p class="video-container-element-caption">{{ getLogin(item) }}</p>
-        </div>-->
+        </div>
     </v-col>
 </template>
 
 <script>
-    import {mapGetters} from "vuex";
-    import {GET_USER} from "./store";
-    import bus, {CHANGE_PHONE_BUTTON} from "./bus";
-    import {phoneFactory} from "./changeTitle";
-    import axios from "axios";
-    import Participant from "./ChatVideoParticipant"
-    import {WebRtcPeer} from "kurento-utils"
+import {mapGetters} from "vuex";
+import {GET_USER} from "./store";
+import bus, {
+    CHANGE_PHONE_BUTTON,
+    VIDEO_LOCAL_ESTABLISHED
+} from "./bus";
+import {phoneFactory} from "./changeTitle";
+import axios from "axios";
+import Vue from 'vue'
 
-    const NOTIFY_ABOUT_JOIN = 'notifyAboutJoin';
-    const LEAVE_ROOM = 'notifyAboutJoin';
+const EVENT_HELLO = 'videoHello';
+const EVENT_BYE = 'videoBye';
 
-    // input events
-    const VIDEO_EXISTING_PARTICIPANTS = 'videoExistingParticipants'
-    const VIDEO_NEW_PARTICIPANT_ARRIVED = 'videoNewParticipantArrived'
-    const VIDEO_ICE_CANDIDATE = 'videoIceCandidate'
-    const VIDEO_PARTICIPANT_LEFT = 'videoParticipantLeft'
-    const VIDEO_RECEIVE_VIDEO_ANSWER = 'videoReceiveVideoAnswer'
+const EVENT_CANDIDATE = 'videoCandidate';
+const EVENT_OFFER = 'videoOffer';
+const EVENT_ANSWER = 'videoAnswer';
 
-    export default {
-        data() {
-            return {
-                prevVideoPaneSize: null,
+export default {
+    data() {
+        return {
+            prevVideoPaneSize: null,
 
-                pcConfig: null,
+            pcConfig: null,
 
-                participants: {},
-                container: null,
+            localStream: null,
+            localVideo: null,
+
+            remoteConnectionData: [
+                // userId: number
+                // peerConnection: RTCPeerConnection
+                // remoteVideo: html element
+            ],
+        }
+    },
+    props: ['chatDto'],
+    computed: {
+        chatId() {
+            const v = this.$route.params.id
+            return parseInt(v);
+        },
+        ...mapGetters({currentUser: GET_USER}),
+        otherParticipantsClass() {
+            if (!this.localStream) {
+                return "order-first"
+            } else {
+                return ""
             }
         },
-        props: ['chatDto'],
-        computed: {
-            chatId() {
-                const v = this.$route.params.id
-                return parseInt(v);
-            },
-            ...mapGetters({currentUser: GET_USER}),
+        properParticipants() {
+            const ppi = this.chatDto.participants.filter(pi => pi.id != this.currentUser.id);
+            console.log("Participant ids except me:", ppi, "my id is", this.currentUser.id);
+            return ppi;
         },
-        methods: {
-            getWebRtcConfiguration() {
-                const localPcConfig = {
-                    iceServers: []
-                };
-                axios.get("/api/chat/public/webrtc/config").then(({data}) => {
-                    for (const srv of data) {
-                        localPcConfig.iceServers.push({
-                            'urls': srv
-                        });
-                        this.pcConfig = localPcConfig;
-                        console.log("Configured WebRTC servers", this.pcConfig);
-                    }
-                    this.registerMe();
-                })
-            },
-            getLogin(participant) {
-                return participant.login;
-            },
-            getAvatar(participant) {
-                return participant.avatar;
-            },
-
-            registerMe() {
-                var message = {
-                    type : 'joinRoom',
-                }
-                this.sendMessage(message);
-            },
-            sendMessage(message) {
-                message = {...message, chatId: this.chatId};
-                console.debug('Sending message: ' + JSON.stringify(message));
-                this.centrifuge.rpc(message).then(function(data){
-                    console.debug("RPC response data: " + JSON.stringify(data));
-                }, function(err) {
-                    console.debug("RPC error: " + JSON.stringify(err));
-                });
-            },
-            onExistingParticipants(msg) {
-                const constraints = {
-                    audio : true,
-                    video : {
-                        mandatory : {
-                            maxWidth : 320,
-                            maxFrameRate : 15,
-                            minFrameRate : 15
-                        }
-                    }
-                };
-                const name = this.currentUser.id;
-                console.log(name + " registered in room " + this.chatId);
-                const participant = new Participant(name, this.sendMessage, this.container);
-                this.participants[name] = participant;
-                const video = participant.getVideoElement();
-
-                const options = {
-                    localVideo: video,
-                    mediaConstraints: constraints,
-                    onicecandidate: participant.onIceCandidate.bind(participant)
-                }
-                participant.rtcPeer = new WebRtcPeer.WebRtcPeerSendonly(options,
-                    function (error) {
-                        if (error) {
-                            return console.error(error);
-                        }
-                        this.generateOffer(participant.offerToReceiveVideo.bind(participant));
+    },
+    methods: {
+        getRemoteVideoId(participantId) {
+            return 'remoteVideo'+participantId;
+        },
+        getWebRtcConfiguration() {
+            const localPcConfig = {
+                iceServers: []
+            };
+            axios.get("/api/chat/public/webrtc/config").then(({data}) => {
+                for (const srv of data) {
+                    localPcConfig.iceServers.push({
+                        'urls': srv
                     });
-                bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, false));
-                this.sendMessage({type: NOTIFY_ABOUT_JOIN})
-                msg.participantSessions.forEach(this.receiveVideo);
-            },
-            receiveVideo(sender) {
-                console.log("receive video for participant", sender)
-                let maybeParticipant = this.participants[sender];
-                if (!maybeParticipant) {
-                    maybeParticipant = new Participant(sender, this.sendMessage, this.container);
-                    this.participants[sender] = maybeParticipant;
+                    this.pcConfig = localPcConfig;
+                    console.log("Configured WebRTC servers", this.pcConfig);
+                }
+                this.initRemoteStructures();
+            })
+
+        },
+        getRemoteVideoHtml(participantId) {
+            return document.querySelector('#'+this.getRemoteVideoId(participantId));
+        },
+        createAndAddNewRemoteConnectionElement(participantId) {
+            this.remoteConnectionData.push({
+                userId: participantId,
+                remoteVideo: this.getRemoteVideoHtml(participantId)
+            });
+        },
+        initRemoteStructures() {
+            console.log("Initializing remote videos");
+            for (let pi of this.properParticipants) {
+                this.createAndAddNewRemoteConnectionElement(pi.id);
+            }
+
+            this.initDevices();
+        },
+        initDevices() {
+            if (!navigator.mediaDevices) {
+                alert('There are no media devices');
+                this.gotLocalStream(null);
+                return
+            }
+            navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: true
+            })
+                .then(this.gotLocalStream)
+                .catch((e) => {
+                    alert('getUserMedia() error: ' + e.name);
+                });
+        },
+        gotLocalStream(stream) {
+            if (stream) {
+                console.log('Adding local stream.');
+                this.localStream = stream;
+                this.localVideo.srcObject = stream;
+            }
+
+            bus.$emit(VIDEO_LOCAL_ESTABLISHED);
+            bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, false))
+
+            this.initConnections();
+        },
+
+        initializeRemoteConnectionElement(rcde) {
+            console.log('>>>>>> creating peer connection, localstream=', this.localStream, "from me to", rcde.userId);
+            const pc = this.createPeerConnection(rcde);
+
+            if (this.localStream) {
+                pc.addStream(this.localStream);
+            }
+            rcde.peerConnection = pc;
+        },
+        initConnections(){
+            if (!this.localStream) {
+                // TODO maybe retry
+                console.warn("localStream still not set -> we unable to initialize connections");
+            } else {
+                console.log('Initializing connections from local stream', this.localStream);
+            }
+            // save this pc to array
+            for (const rcde of this.remoteConnectionData) {
+                this.initializeRemoteConnectionElement(rcde);
+            }
+            this.sendMessage({type: EVENT_HELLO});
+        },
+
+        maybeStart(rcde){
+            console.log('>>>>>> starting peer connection for', rcde.userId);
+
+            this.stop(rcde);
+            const pc = this.createPeerConnection(rcde);
+            console.log('Created RTCPeerConnnection me -> user '+rcde.userId);
+            if (this.localStream) {
+                // TODO maybe retry
+                pc.addStream(this.localStream);
+            }
+            rcde.peerConnection = pc;
+            this.doOffer(rcde);
+        },
+        createPeerConnection(rcde) {
+            const remoteVideo = rcde.remoteVideo;
+            try {
+                const pc = new RTCPeerConnection(this.pcConfig);
+                pc.onicecandidate = this.fhandleIceCandidate(rcde);
+                if ("ontrack" in pc) {
+                    pc.ontrack = this.fhandleRemoteTrackAdded(remoteVideo);
                 } else {
-                    console.warn("Receiving video from myself isn't allowed, return")
+                    pc.onaddstream = this.fhandleRemoteStreamAdded(remoteVideo);
+                }
+                pc.onremovestream = this.handleRemoteStreamRemoved;
+                return pc;
+            } catch (e) {
+                console.log('Failed to create PeerConnection, exception: ' + e.message);
+                alert('Cannot create RTCPeerConnection object.');
+            }
+        },
+
+        doAnswer(pcde){
+            console.log('Sending answer to peer ' + pcde.userId);
+            const pc = pcde.peerConnection;
+            pc.createAnswer().then(
+                this.fsetLocalDescriptionAndSendMessage(pcde),
+                this.fonCreateSessionDescriptionError(pcde)
+            );
+        },
+        // ex doCall
+        doOffer(pcde) {
+            console.log('Sending offer to peer ' + pcde.userId);
+            const pc = pcde.peerConnection;
+            pc.createOffer(this.fsetLocalDescriptionAndSendMessage(pcde), this.fhandleCreateOfferError(pcde));
+        },
+        handleRemoteHangup(pcde) {
+            console.log('Session terminated for ' + pcde.userId);
+            this.stop(pcde);
+        },
+        fhandleRemoteStreamAdded(remoteVideo) {
+            return (event) => {
+                console.log('Remote stream added.', event);
+                remoteVideo.srcObject = event.stream;
+            }
+        },
+        fhandleRemoteTrackAdded(remoteVideo) {
+            return (event) => {
+                console.log('Remote track added.', event);
+                remoteVideo.srcObject = event.streams[0];
+            }
+        },
+        handleRemoteStreamRemoved (event) {
+            console.log('Remote stream removed. Event: ', event);
+        },
+        stop(pcde) {
+            if (pcde.peerConnection) {
+                console.log("Stopping peer connection to user " + pcde.userId);
+                pcde.peerConnection.close();
+            } else {
+                console.log("Didn't stopped peer connection to user " + pcde.userId);
+            }
+            pcde.peerConnection = null;
+        },
+        hangupAll() {
+            console.log('Hanging up.');
+            for (const pcde of this.remoteConnectionData) {
+                this.stop(pcde);
+            }
+            this.sendMessage({type: EVENT_BYE});
+        },
+        fhandleIceCandidate(pcde) {
+            const toUserId = pcde.userId;
+            return (event) => {
+                console.log('icecandidate event: ', event);
+                if (event.candidate) {
+                    this.sendMessage({
+                        type: EVENT_CANDIDATE,
+                        sdpMLineIndex: event.candidate.sdpMLineIndex,
+                        sdpMid: event.candidate.sdpMid,
+                        candidate: event.candidate.candidate,
+                        toUserId: toUserId
+                    });
+                } else {
+                    console.log('End of candidates.', event);
+                }
+            }
+        },
+        fhandleCreateOfferError(pcde) {
+            return (event) => {
+                console.log('createOffer() error: ', event);
+                this.onUnknownErrorReset(pcde);
+            }
+        },
+
+        fsetLocalDescriptionAndSendMessage(pcde) {
+            return (sessionDescription) => {
+                console.log('setting setLocalDescription and sending it', sessionDescription);
+                const pc = pcde.peerConnection;
+                pc.setLocalDescription(sessionDescription);
+                const toUserId = pcde.userId;
+
+                const type = sessionDescription.type;
+                if (!type) {
+                    console.error("Null type in setLocalAndSendMessage");
                     return
                 }
-                var participant = maybeParticipant;
-                var video = participant.getVideoElement();
-
-                var options = {
-                    remoteVideo: video,
-                    onicecandidate: participant.onIceCandidate.bind(participant)
-                }
-                participant.rtcPeer = new WebRtcPeer.WebRtcPeerRecvonly(options,
-                    function (error) {
-                        if(error) {
-                            return console.error(error);
-                        }
-                        this.generateOffer(participant.offerToReceiveVideo.bind(participant));
-                    });
-            },
-            onNewParticipantArrived(request) {
-                console.debug("User "+request.userSessionId + " arrived")
-                this.receiveVideo(request.userSessionId);
-            },
-            receiveVideoResponse(result) {
-                const maybeParticipant = this.participants[result.userSessionId]
-                if (!maybeParticipant) {
-                    console.warn("userSessionId " + result.userSessionId + " for receiveVideoResponse still not present", this.participants)
-                } else {
-                    maybeParticipant.rtcPeer.processAnswer(result.sdpAnswer, function (error) {
-                        if (error) return console.error(error);
-                    });
-                }
-            },
-            handleIceCandidate(parsedMessage) {
-                const maybeParticipant = this.participants[parsedMessage.userSessionId];
-                if (!maybeParticipant) {
-                    console.warn("userSessionId " + parsedMessage.userSessionId + " for handleIceCandidate still not present", this.participants)
-                } else {
-                    maybeParticipant.rtcPeer.addIceCandidate(parsedMessage.candidate, function (error) {
-                        if (error) {
-                            console.error("Error adding candidate: " + error);
-                            return;
-                        }
-                    });
-                }
-            },
-            onParticipantLeft(request) {
-                console.log('Participant ' + request.userSessionId + ' left');
-                var participant = this.participants[request.userSessionId];
-                participant.dispose();
-                delete this.participants[request.userSessionId];
-            },
-            hangup(){
-                this.sendMessage({
-                    type : LEAVE_ROOM
-                });
-
-                for(const key in this.participants) {
-                    this.participants[key].dispose();
+                switch (type) {
+                    case 'offer':
+                        this.sendMessage({type: EVENT_OFFER, value: sessionDescription, toUserId: toUserId});
+                        break;
+                    case 'answer':
+                        this.sendMessage({type: EVENT_ANSWER, value: sessionDescription, toUserId: toUserId});
+                        break;
+                    default:
+                        console.error("Unknown type '"+type+"' in setLocalAndSendMessage");
                 }
             }
         },
 
-        mounted() {
-            // this.localVideo = document.querySelector('#localVideo');
-            this.container = document.getElementById('video-container');
-
-            /*
-             * https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
-             * https://www.html5rocks.com/en/tutorials/webrtc/basics/
-             * https://codelabs.developers.google.com/codelabs/webrtc-web/#4
-             * https://habr.com/ru/company/Voximplant/blog/417869/
-             */
-            bus.$on(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
-            bus.$on(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived)
-            bus.$on(VIDEO_RECEIVE_VIDEO_ANSWER, this.receiveVideoResponse);
-            bus.$on(VIDEO_ICE_CANDIDATE, this.handleIceCandidate);
-            bus.$on(VIDEO_PARTICIPANT_LEFT, this.onParticipantLeft);
-
-            this.getWebRtcConfiguration();
+        fonCreateSessionDescriptionError(pcde) {
+            return (error) => {
+                console.error('Failed to create session description: ' + error.toString());
+                this.onUnknownErrorReset(pcde);
+            }
         },
 
-        beforeDestroy() {
-            console.log("Cleaning up");
-            this.hangup();
-            bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, true));
+        onUnknownErrorReset(pcde) {
+            console.log("Resetting state on error");
+            this.localStream = null;
 
-            this.prevVideoPaneSize=null;
-            this.pcConfig = null;
-            this.participants = {};
+            pcde.peerConnection = null;
 
-            bus.$off(VIDEO_EXISTING_PARTICIPANTS, this.onExistingParticipants);
-            bus.$off(VIDEO_NEW_PARTICIPANT_ARRIVED, this.onNewParticipantArrived);
-            bus.$off(VIDEO_RECEIVE_VIDEO_ANSWER, this.receiveVideoResponse);
-            bus.$off(VIDEO_ICE_CANDIDATE, this.handleIceCandidate);
-            bus.$off(VIDEO_PARTICIPANT_LEFT, this.onParticipantLeft);
+            console.log("Initializing devices again");
+            this.initRemoteStructures();
         },
 
-    }
+        isMyMessage (message) {
+            return message.metadata && this.centrifugeSessionId == message.metadata.originatorClientId
+        },
+        shouldSkipNonMineMessage(message) {
+            return message.toUserId != this.currentUser.id;
+        },
+        lookupPeerConnectionDataByUserId(userId) {
+            console.log("Using remoteConnectionData", this.remoteConnectionData);
+            for (const pcde of this.remoteConnectionData) {
+                if (pcde.userId == userId) {
+                    return pcde;
+                }
+            }
+            return null;
+        },
+        lookupPeerConnectionData(message) {
+            const originatorUserId = message.fromUserId;
+            return this.lookupPeerConnectionDataByUserId(originatorUserId);
+        },
+
+        stopStreamedVideo(videoElem) {
+            if (!videoElem) {
+                console.warn("Didn't stopped html tracks because videoElem is null")
+                return
+            }
+
+            console.log("Stopping html tracks");
+            const stream = videoElem.srcObject;
+            if (!stream) {
+                console.warn("Didn't stopped html tracks because stream is null")
+                return
+            }
+
+            const tracks = stream.getTracks();
+
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+
+            videoElem.srcObject = null;
+        },
+
+        getLogin(participant) {
+            return participant.login;
+        },
+        getAvatar(participant) {
+            return participant.avatar;
+        },
+
+
+
+        sendMessage(message) {
+            message = {...message, chatId: this.chatId};
+            console.debug('Sending message: ' + JSON.stringify(message));
+            this.centrifuge.rpc(message).then(function(data){
+                console.debug("RPC response data: " + JSON.stringify(data));
+            }, function(err) {
+                console.debug("RPC error: " + JSON.stringify(err));
+            });
+        },
+
+        onHello(rawMessage) {
+            const pcde = this.lookupPeerConnectionData((rawMessage));
+            this.maybeStart(pcde);
+        },
+        onBye(rawMessage) {
+            const pcde = this.lookupPeerConnectionData((rawMessage));
+            this.handleRemoteHangup(pcde);
+        },
+        onOffer(rawMessage) {
+            const pcde = this.lookupPeerConnectionData((rawMessage));
+            const pc = pcde.peerConnection;
+            const message = (rawMessage);
+            if (pc) {
+                pc.setRemoteDescription(new RTCSessionDescription(message.value));
+                this.doAnswer(pcde);
+            }
+        },
+        onAnswer(rawMessage) {
+            const pcde = this.lookupPeerConnectionData((rawMessage));
+            const pc = pcde.peerConnection;
+            const message = (rawMessage);
+            if (pc) {
+                pc.setRemoteDescription(new RTCSessionDescription(message.value));
+            }
+        },
+        onCandidate(rawMessage) {
+            const pcde = this.lookupPeerConnectionData((rawMessage));
+            const pc = pcde.peerConnection;
+            const message = (rawMessage);
+            if (pc) {
+                console.debug("Handling remote ICE candidate for ", pcde.userId);
+                const candidate = new RTCIceCandidate({
+                    sdpMLineIndex: message.sdpMLineIndex,
+                    candidate: message.candidate,
+                    sdpMid: message.sdpMid // TODO maybe not need to add sdpMid ?
+                });
+                pc.addIceCandidate(candidate);
+            }
+        },
+    },
+
+    mounted() {
+        this.localVideo = document.querySelector('#localVideo');
+
+        /*
+         * https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
+         * https://www.html5rocks.com/en/tutorials/webrtc/basics/
+         * https://codelabs.developers.google.com/codelabs/webrtc-web/#4
+         * WebRTC applications need to do several things:
+          1.  Get streaming audio, video or other data.
+          2.  Get network information such as IP addresses and ports, and exchange this with other WebRTC clients (known as peers) to enable connection, even through NATs and firewalls.
+          3.  Coordinate signaling communication to report errors and initiate or close sessions.
+          4.  Exchange information about media and client capability, such as resolution and codecs.
+          5.  Communicate streaming audio, video or data.
+         */
+
+        // handle broadcast messages
+        bus.$on(EVENT_HELLO, this.onHello);
+        bus.$on(EVENT_BYE, this.onBye);
+        // handle personal messages
+        bus.$on(EVENT_CANDIDATE, this.onOffer);
+        bus.$on(EVENT_OFFER, this.onAnswer);
+        bus.$on(EVENT_ANSWER, this.onCandidate);
+
+        this.getWebRtcConfiguration();
+    },
+
+    beforeDestroy() {
+        console.log("Cleaning up");
+        this.hangupAll();
+        bus.$emit(CHANGE_PHONE_BUTTON, phoneFactory(true, true));
+
+        this.prevVideoPaneSize=null;
+        this.pcConfig = null;
+        this.localStream = null;
+        this.localVideo = null;
+        this.remoteConnectionData = [];
+
+        bus.$off(EVENT_HELLO, this.onHello)
+        bus.$off(EVENT_BYE, this.onBye);
+        bus.$off(EVENT_CANDIDATE, this.onOffer);
+        bus.$off(EVENT_OFFER, this.onAnswer);
+        bus.$off(EVENT_ANSWER, this.onCandidate);
+    },
+
+    watch: {
+        'chatDto.participantIds': {
+            handler: function (val, oldVal) {
+                const addedParticipantIds = val.filter(n => !oldVal.includes(n));
+                const deletedParticipantIds = oldVal.filter(n => !val.includes(n))
+                console.info("Added participantIds ", addedParticipantIds, " deleted participantIds ", deletedParticipantIds);
+
+                // close olds
+                for (const participantId of deletedParticipantIds) {
+                    const rcde = this.lookupPeerConnectionDataByUserId(participantId);
+                    if (!rcde) {
+                        console.warn("Can't lookup peer connection data by userId ", participantId);
+                        continue;
+                    }
+                    const html = this.getRemoteVideoHtml(rcde.userId);
+                    console.log("Got remote video el", html);
+                    this.stopStreamedVideo(html);
+
+                    this.stop(rcde);
+
+                    // remove it from array
+                    const foundIndex = this.remoteConnectionData.findIndex(value => value.userId === rcde.userId);
+                    if (foundIndex === -1) {
+                        console.warn("Can't find index to remove from participantIds", rcde.userId);
+                        return
+                    }
+                    this.remoteConnectionData.splice(foundIndex, 1);
+                    console.info("Successfully removed PeerConnectionData for user", rcde.userId, this.remoteConnectionData);
+
+                    // delete from page
+                    html.parentElement.removeChild(html);
+                }
+                this.$forceUpdate();
+
+                // bypass reactive effect of rerender remote participants
+                Vue.nextTick(()=>{
+                    // template already changed, so we need initialize news
+                    for (const participantId of addedParticipantIds) {
+                        this.createAndAddNewRemoteConnectionElement(participantId);
+                        const rcde = this.lookupPeerConnectionDataByUserId(participantId);
+                        if (!rcde) {
+                            console.warn("Can't lookup peer connection data by userId ", participantId);
+                            continue;
+                        }
+                        this.initializeRemoteConnectionElement(rcde);
+                    }
+                });
+
+            },
+            deep: true
+        },
+
+    },
+}
 </script>
 
 <style scoped lang="stylus">
-    #video-container {
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        overflow-y: hidden;
-        height 100%
-    }
+#video-container {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height 100%
+}
 
-    .video-container-element {
-        display flex
-        flex-direction column
-        object-fit: scale-down;
-        height 100% !important
-        width 100% !important
-    }
+.video-container-element {
+    display flex
+    flex-direction column
+    object-fit: scale-down;
+    height 100% !important
+    width 100% !important
+}
 
-    .video-container-element-my {
-        background #b3e7ff
-    }
+.video-container-element-my {
+    background #b3e7ff
+}
 
-    .video-container-element:nth-child(even) {
-        background #d5fdd5;
-    }
+.video-container-element:nth-child(even) {
+    background #d5fdd5;
+}
 
-    video {
-        //object-fit: scale-down;
-        //width 100% !important
-        height 100% !important // todo its
-    }
+video {
+    //object-fit: scale-down;
+    //width 100% !important
+    height 100% !important // todo its
+}
 
-    .video-container-element-caption {
-        top -1.8em
-        left 2em
-        text-shadow: -2px 0 white, 0 2px white, 2px 0 white, 0 -2px white;
-        position: relative;
-    }
+.video-container-element-caption {
+    top -1.8em
+    left 2em
+    text-shadow: -2px 0 white, 0 2px white, 2px 0 white, 0 -2px white;
+    position: relative;
+}
 </style>

@@ -57,7 +57,7 @@ public class UserSession implements Closeable {
         return this.roomId;
     }
 
-    public void receiveVideoFrom(UserSession sender, String sdpOffer) {
+    public void receiveVideoFrom(UserSession sender, String sdpOffer) {  // seems it's order to Bob to process the offer
         log.info("USER {}: connecting with {} in room {}", getUserSessionId(), sender.getUserSessionId(), getRoomId());
         log.trace("USER {}: SdpOffer for {} is {}", getUserSessionId(), sender.getUserSessionId(), sdpOffer);
         final String ipSdpAnswer = this.getEndpointForUser(sender).processOffer(sdpOffer);

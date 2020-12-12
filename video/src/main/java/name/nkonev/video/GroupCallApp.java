@@ -15,7 +15,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
-import static name.nkonev.video.controller.CallHandler.INVOKE;
+import static name.nkonev.video.controller.SignalingHandler.INVOKE;
 
 @SpringBootApplication
 @EnableScheduling

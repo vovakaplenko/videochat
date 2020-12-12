@@ -1,6 +1,7 @@
 package name.nkonev.video.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import name.nkonev.video.controller.SignalingMessage;
 import name.nkonev.video.dto.out.Typed;
 import name.nkonev.video.dto.out.WithUserSession;
 import okhttp3.*;
@@ -35,6 +36,26 @@ public class ChatRequestService {
             );
             final Request request = new Request.Builder()
                     .url(chatUrl + "?toUser=" + sessionId)
+                    .post(requestBody)
+                    .build();
+            LOGGER.debug("Invoking chat {}, body={}", request, body);
+            final Response response = okHttpClient.newCall(request).execute();
+            final String json = response.body().string();
+            LOGGER.debug("chat response code={}, body={}", response.code(), json);
+        } catch (Exception e) {
+            LOGGER.error("failed chat invocation", e);
+        }
+    }
+
+    public void send(Long toUserId, SignalingMessage broadcastMessage) {
+        try {
+            final String body = objectMapper.writeValueAsString(broadcastMessage);
+            final RequestBody requestBody = RequestBody.create(
+                    MediaType.get("application/json;charset=UTF-8"),
+                    body
+            );
+            final Request request = new Request.Builder()
+                    .url(chatUrl + "?toUser=" + toUserId)
                     .post(requestBody)
                     .build();
             LOGGER.debug("Invoking chat {}, body={}", request, body);

@@ -81,6 +81,20 @@ func modifyMessage(msg []byte, originatorUserId string, originatorClientId strin
 	return json.Marshal(v)
 }
 
+func modifySignalingMessage(msg []byte, originatorUserId string) ([]byte, error) {
+	var v = &utils.H{}
+	if err := json.Unmarshal(msg, v); err != nil {
+		return nil, err
+	}
+	parseInt64, err := utils.ParseInt64(originatorUserId)
+	if err != nil {
+		return nil, err
+	}
+	(*v)["fromUserId"] = parseInt64
+	return json.Marshal(v)
+}
+
+
 func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClient, loadbalancer client.StickyLoadBalancer) *centrifuge.Node {
 	// We use default config here as starting point. Default config contains
 	// reasonable values for available options.
@@ -223,10 +237,18 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 					}
 				}
 
-				Logger.Infof("browser -> video roomId=%v, userId=%v, body=%v", v.ChatId, creds.UserID, string(event.Data))
-				err = restClient.InvokeVideo(event.Data, context.Background(), videoUrl, v.ChatId, creds.UserID)
+				message, err := modifySignalingMessage(event.Data, creds.UserID)
 				if err != nil {
-					Logger.Errorf("Error during invoke video with data %v %v", string(event.Data), err)
+					Logger.Errorf("Error during modifying %v %v", string(event.Data), err)
+					return centrifuge.RPCReply{
+						Error: centrifuge.ErrorInternal,
+					}
+				}
+
+				Logger.Infof("browser -> video roomId=%v, userId=%v, body=%v", v.ChatId, creds.UserID, string(message))
+				err = restClient.InvokeVideo(message, context.Background(), videoUrl, v.ChatId, creds.UserID)
+				if err != nil {
+					Logger.Errorf("Error during invoke video with data %v %v", string(message), err)
 					return centrifuge.RPCReply{
 						Error: centrifuge.ErrorInternal,
 					}
@@ -261,19 +283,6 @@ func ConfigureCentrifuge(lc fx.Lifecycle, dbs db.DB, restClient client.RestClien
 }
 
 func checkPermissions(dbs db.DB, userId string, channelId int64, channelName string) error {
-	if utils.CHANNEL_PREFIX_SIGINALING == channelName {
-		if ids, err := dbs.GetParticipantIds(channelId); err != nil {
-			return err
-		} else {
-			for _, uid := range ids {
-				if fmt.Sprintf("%v", uid) == userId {
-					Logger.Infof("User %v found among participants of chat %v", userId, channelId)
-					return nil
-				}
-			}
-			return errors.New(fmt.Sprintf("User %v not found among participants", userId))
-		}
-	}
 	if utils.CHANNEL_PREFIX_CHAT_MESSAGES == channelName {
 		if ids, err := dbs.GetParticipantIds(channelId); err != nil {
 			return err
@@ -291,14 +300,7 @@ func checkPermissions(dbs db.DB, userId string, channelId int64, channelName str
 }
 
 func getChannelId(channel string) (int64, string, error) {
-	if strings.HasPrefix(channel, utils.CHANNEL_PREFIX_SIGINALING) {
-		s := channel[len(utils.CHANNEL_PREFIX_SIGINALING):]
-		if parseInt64, err := utils.ParseInt64(s); err != nil {
-			return 0, "", err
-		} else {
-			return parseInt64, utils.CHANNEL_PREFIX_SIGINALING, nil
-		}
-	} else if strings.HasPrefix(channel, utils.CHANNEL_PREFIX_CHAT_MESSAGES) {
+	if strings.HasPrefix(channel, utils.CHANNEL_PREFIX_CHAT_MESSAGES) {
 		s := channel[len(utils.CHANNEL_PREFIX_CHAT_MESSAGES):]
 		if parseInt64, err := utils.ParseInt64(s); err != nil {
 			return 0, "", err

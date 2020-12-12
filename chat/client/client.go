@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/guregu/null"
 	uberCompat "github.com/nkonev/jaeger-uber-propagation-compat/propagation"
@@ -120,7 +119,7 @@ func (rc RestClient) InvokeVideo(data []byte, c context.Context, videoSelectedUr
 		"Content-Type":    {contentType},
 	}
 
-	fullUrl := videoSelectedUrl + fmt.Sprintf("?userSessionId=%v", userId)
+	fullUrl := videoSelectedUrl
 
 	parsedUrl, err := url.Parse(fullUrl)
 	if err != nil {
