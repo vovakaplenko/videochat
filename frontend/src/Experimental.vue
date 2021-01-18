@@ -7,6 +7,7 @@
         :estimate-size="20"
         v-on:totop="onScrollToTop"
         v-on:tobottom="onScrollToBottom"
+        :top-threshold="100"
     >
         <div slot="footer" class="loading-spinner">Loading ...</div>
     </virtual-list>
@@ -22,13 +23,15 @@
             params: {
                 page: currentPage,
                 size: 20,
-                //reverse: true
+                reverse: true
             },
+        }).then(({ data }) => {
+            return data.reverse();
         })
     }
 
     const getPageData2 = (currentPage) => {
-        return fetchMessages(currentPage).then(({ data }) => {
+        return fetchMessages(currentPage).then(( data ) => {
             console.log("New arr2", data)
             return data;
         })
@@ -36,8 +39,8 @@
 
     const initPageData = () => {
         const arr = [];
-        fetchMessages(0).then(({ data }) => {
-            arr.push(...data);
+        fetchMessages(0).then(( data ) => {
+            arr.unshift(...data);
             console.log("New arr", arr)
         })
         return arr;
@@ -55,12 +58,13 @@
         methods: {
             onScrollToBottom() {
                 console.log("On scroll to bottom")
-                getPageData2(++this.page).then(value => {
-                    this.items = this.items.concat(value);
-                })
+
             },
             onScrollToTop () {
-                console.log('at top')
+                console.log('at top');
+                getPageData2(++this.page).then(value => {
+                    this.items = value.concat(this.items);
+                })
             },
 
         },
