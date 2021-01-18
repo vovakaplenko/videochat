@@ -7,7 +7,7 @@
         :estimate-size="20"
         v-on:totop="onScrollToTop"
         v-on:tobottom="onScrollToBottom"
-        :top-threshold="100"
+        :top-threshold="400"
     >
         <div slot="footer" class="loading-spinner">Loading ...</div>
     </virtual-list>
@@ -18,7 +18,9 @@
     import axios from "axios";
     import Item from './Item'
 
+    let loading = false;
     const fetchMessages = (currentPage) => {
+        loading = true;
         return axios.get(`/api/chat/1/message`, {
             params: {
                 page: currentPage,
@@ -27,10 +29,13 @@
             },
         }).then(({ data }) => {
             return data.reverse();
+        }).finally(() => {
+            loading = false;
         })
     }
 
     const getPageData2 = (currentPage) => {
+        if (loading) { return Promise.resolve() }
         return fetchMessages(currentPage).then(( data ) => {
             console.log("New arr2", data)
             return data;
@@ -50,7 +55,7 @@
         data () {
             return {
                 itemComponent: Item,
-                page: 0,
+                page: 1,
                 items: initPageData()
             }
         },
@@ -62,8 +67,11 @@
             },
             onScrollToTop () {
                 console.log('at top');
-                getPageData2(++this.page).then(value => {
-                    this.items = value.concat(this.items);
+                getPageData2(this.page).then(value => {
+                    if (value) {
+                        this.items = value.concat(this.items);
+                        this.page++;
+                    }
                 })
             },
 
