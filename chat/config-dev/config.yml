@@ -55,4 +55,3 @@ openvidu:
     base: "http://api.site.local:5443"
   user: "OPENVIDUAPP"
   password: "MY_SECRET"
-  wsUrl: "ws://localhost:8081/api/video/openvidu"

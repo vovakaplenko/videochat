@@ -55,8 +55,12 @@
                 sess.constructor.prototype.processToken = function (token) {
                     oldProcessTokenFunction.call(this, token);
 
-                    this.openvidu.wsUri = configObj.wsUrl;
-                    //this.openvidu.httpUri = OPENVIDU_SERVER_URL;
+                    if (configObj.wsUrl) {
+                        this.openvidu.wsUri = configObj.wsUrl;
+                    } else {
+                        console.log("Using default openvidu url because chat server returned empty ws url");
+                        this.openvidu.wsUri = getWebsocketUrlPrefix()+"/api/video/openvidu"
+                    }
                 };
 
                 this.session = sess;
