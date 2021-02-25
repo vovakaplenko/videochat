@@ -1,26 +1,41 @@
 package main
 
 import (
-	"crypto/tls"
+	"contrib.go.opencensus.io/exporter/jaeger"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	uberCompat "github.com/nkonev/jaeger-uber-propagation-compat/propagation"
 	log "github.com/pion/ion-log"
 	"github.com/pion/ion-sfu/cmd/signal/json-rpc/server"
 	"github.com/pion/ion-sfu/pkg/middlewares/datachannel"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rakyll/statik/fs"
 	"github.com/sourcegraph/jsonrpc2"
 	websocketjsonrpc2 "github.com/sourcegraph/jsonrpc2/websocket"
 	"github.com/spf13/viper"
+	"go.opencensus.io/trace"
+	"go.uber.org/fx"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
+	"nkonev.name/video/handlers"
 	"os"
+	"strings"
 	"sync"
+	. "nkonev.name/video/logger"
+
 )
+
+const EXTERNAL_TRACE_ID_HEADER = "trace-id"
+
+type staticMiddleware echo.MiddlewareFunc
+
 
 var (
 	conf        = sfu.Config{}
@@ -96,37 +111,6 @@ func parse() bool {
 	return true
 }
 
-func startMetrics(addr string) {
-	// start metrics server
-	m := http.NewServeMux()
-	m.Handle("/metrics", promhttp.Handler())
-	srv := &http.Server{
-		Handler: m,
-	}
-
-	metricsLis, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Panicf("cannot bind to metrics endpoint %s. err: %s", addr, err)
-	}
-	log.Infof("Metrics Listening at %s", addr)
-
-	err = srv.Serve(metricsLis)
-	if err != nil {
-		log.Errorf("debug server stopped. got err: %s", err)
-	}
-}
-
-func NewRestClient() *http.Client {
-	tr := &http.Transport{
-		MaxIdleConns:       viper.GetInt("http.idle.conns.max"),
-		IdleConnTimeout:    viper.GetDuration("http.idle.connTimeout"),
-		DisableCompression: viper.GetBool("http.disableCompression"),
-	}
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Transport: tr}
-	return client
-}
-
 type UsersResponse struct {
 	UsersCount int64 `json:"usersCount"`
 }
@@ -147,6 +131,23 @@ func main() {
 
 	log.Infof("--- Starting SFU Node ---")
 
+	app := fx.New(
+		fx.Logger(Logger),
+		fx.Provide(
+			configureEcho,
+			configureStaticMiddleware,
+		),
+		fx.Invoke(
+			initJaeger,
+			runEcho,
+		),
+	)
+	app.Run()
+
+	Logger.Infof("Exit program")
+
+	////////////////////////////////////////////////////
+
 	s := sfu.NewSFU(conf)
 	dc := s.NewDatachannel(sfu.APIChannelLabel)
 	dc.Use(datachannel.SubscriberAPI)
@@ -163,113 +164,6 @@ func main() {
 
 	sessionUserPeer := &sync.Map{}
 
-	http.Handle("/video/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Header.Get("X-Auth-UserId")
-		chatId := r.URL.Query().Get("chatId")
-		if !checkAccess(client, userId, chatId) {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		c, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			panic(err)
-		}
-		defer c.Close()
-
-		p := server.NewJSONSignal(sfu.NewPeer(s))
-		addPeerToMap(sessionUserPeer, chatId, userId, p)
-		defer p.Close()
-		defer removePeerFromMap(sessionUserPeer, chatId, userId)
-
-		jc := jsonrpc2.NewConn(r.Context(), websocketjsonrpc2.NewObjectStream(c), p)
-		<-jc.DisconnectNotify()
-	}))
-
-	// GET /api/video/users?chatId=${this.chatId} - responds users count
-	http.Handle("/video/users", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Header.Get("X-Auth-UserId")
-		chatId := r.URL.Query().Get("chatId")
-		if !checkAccess(client, userId, chatId) {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		chatInterface, ok := sessionUserPeer.Load(chatId)
-		response := UsersResponse{}
-		if ok {
-			chat := chatInterface.(*sync.Map)
-			response.UsersCount = countMapLen(chat)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		marshal, err := json.Marshal(response)
-		if err != nil {
-			log.Errorf("Error during marshalling UsersResponse to json")
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			_, err := w.Write(marshal)
-			if err != nil {
-				log.Errorf("Error during sending json")
-			}
-		}
-	}))
-
-	// PUT /api/video/notify?chatId=${this.chatId}` -> "/internal/video/notify"
-	http.Handle("/video/notify", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userId := r.Header.Get("X-Auth-UserId")
-		chatId := r.URL.Query().Get("chatId")
-		if !checkAccess(client, userId, chatId) {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		var usersCount int64 = 0
-		chatInterface, ok := sessionUserPeer.Load(chatId)
-		if ok {
-			chat := chatInterface.(*sync.Map)
-			usersCount = countMapLen(chat)
-		}
-
-		url0 := viper.GetString("chat.url.base")
-		url1 := viper.GetString("chat.url.notify")
-
-		fullUrl := fmt.Sprintf("%v%v?usersCount=%v&chatId=%v", url0, url1, usersCount, chatId)
-		parsedUrl, err := url.Parse(fullUrl)
-		if err != nil {
-			log.Errorf("Failed during parse chat url: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		req := &http.Request{Method: http.MethodPut, URL: parsedUrl}
-
-		response, err := client.Do(req)
-		if err != nil {
-			log.Errorf("Transport error during notifying %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			if response.StatusCode != http.StatusOK {
-				log.Errorf("Http Error %v during notifying %v", response.StatusCode, err)
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-		}
-	}))
-
-	// GET `/api/video/config`
-	http.Handle("/video/config", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		urls := viper.GetStringSlice("frontend.urls")
-		response := ConfigResponse{Urls: urls}
-		w.Header().Set("Content-Type", "application/json")
-		marshal, err := json.Marshal(response)
-		if err != nil {
-			log.Errorf("Error during marshalling ConfigResponse to json")
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			_, err := w.Write(marshal)
-			if err != nil {
-				log.Errorf("Error during sending json")
-			}
-		}
-	}))
 
 	go startMetrics(metricsAddr)
 
@@ -335,4 +229,140 @@ func checkAccess(client *http.Client, userIdString string, chatIdString string) 
 		log.Errorf("Unexpected status on checkAccess %v", response.StatusCode)
 		return false
 	}
+}
+
+
+
+func configureOpencensusMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(ctx echo.Context) (err error) {
+			handler := &ochttp.Handler{
+				Handler: http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						ctx.SetRequest(r)
+						ctx.SetResponse(echo.NewResponse(w, ctx.Echo()))
+						existsSpan := trace.FromContext(ctx.Request().Context())
+						if existsSpan != nil {
+							w.Header().Set(EXTERNAL_TRACE_ID_HEADER, existsSpan.SpanContext().TraceID.String())
+						}
+						err = next(ctx)
+					},
+				),
+				Propagation: &uberCompat.HTTPFormat{},
+			}
+			handler.ServeHTTP(ctx.Response(), ctx.Request())
+			return
+		}
+	}
+}
+
+func createCustomHTTPErrorHandler(e *echo.Echo) func(err error, c echo.Context) {
+	originalHandler := e.DefaultHTTPErrorHandler
+	return func(err error, c echo.Context) {
+		GetLogEntry(c.Request()).Errorf("Unhandled error: %v", err)
+		originalHandler(err, c)
+	}
+}
+
+func configureEcho(
+	staticMiddleware staticMiddleware,
+	authMiddleware handlers.AuthMiddleware,
+	lc fx.Lifecycle,
+	db db.DB,
+	m *minio.Client,
+) *echo.Echo {
+
+	bodyLimit := viper.GetString("server.body.limit")
+
+	e := echo.New()
+	e.Logger.SetOutput(Logger.Writer())
+
+	e.HTTPErrorHandler = createCustomHTTPErrorHandler(e)
+
+	e.Pre(echo.MiddlewareFunc(staticMiddleware))
+	e.Use(configureOpencensusMiddleware())
+	e.Use(echo.MiddlewareFunc(authMiddleware))
+	accessLoggerConfig := middleware.LoggerConfig{
+		Output: Logger.Writer(),
+		Format: `"remote_ip":"${remote_ip}",` +
+			`"method":"${method}","uri":"${uri}",` +
+			`"status":${status},` +
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out},"traceId":"${header:X-B3-Traceid}"` + "\n",
+	}
+	e.Use(middleware.LoggerWithConfig(accessLoggerConfig))
+	e.Use(middleware.Secure())
+	e.Use(middleware.BodyLimit(bodyLimit))
+
+	ch := handlers.NewFileHandler(db, m)
+	e.POST("/storage/avatar", ch.PutAvatar)
+	e.GET(fmt.Sprintf("%v/:filename", handlers.UrlStorageGetAvatar), ch.Download)
+
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			// do some work on application stop (like closing connections and files)
+			Logger.Infof("Stopping http server")
+			return e.Shutdown(ctx)
+		},
+	})
+
+	return e
+}
+
+func configureStaticMiddleware() staticMiddleware {
+	statikFS, err := fs.NewWithNamespace("assets")
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			reqUrl := c.Request().RequestURI
+			if reqUrl == "/" || reqUrl == "/index.html" || reqUrl == "/favicon.ico" || strings.HasPrefix(reqUrl, "/build") || strings.HasPrefix(reqUrl, "/assets") || reqUrl == "/git.json" {
+				http.FileServer(statikFS).
+					ServeHTTP(c.Response().Writer, c.Request())
+				return nil
+			} else {
+				return next(c)
+			}
+		}
+	}
+}
+
+func initJaeger(lc fx.Lifecycle) error {
+	exporter, err := jaeger.NewExporter(jaeger.Options{
+		AgentEndpoint: viper.GetString("jaeger.endpoint"),
+		Process: jaeger.Process{
+			ServiceName: "chat",
+		},
+	})
+	if err != nil {
+		return err
+	}
+	trace.RegisterExporter(exporter)
+	trace.ApplyConfig(trace.Config{
+		DefaultSampler: trace.AlwaysSample(),
+	})
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			Logger.Infof("Stopping tracer")
+			exporter.Flush()
+			trace.UnregisterExporter(exporter)
+			return nil
+		},
+	})
+	return nil
+}
+
+// rely on viper import and it's configured by
+func runEcho(e *echo.Echo) {
+	address := viper.GetString("server.address")
+
+	Logger.Info("Starting server...")
+	// Start server in another goroutine
+	go func() {
+		if err := e.Start(address); err != nil {
+			Logger.Infof("server shut down: %v", err)
+		}
+	}()
+	Logger.Info("Server started. Waiting for interrupt signal 2 (Ctrl+C)")
 }
