@@ -63,7 +63,7 @@ func load() bool {
 	}
 
 	viper.SetConfigFile(file)
-	viper.SetConfigType("yml")
+	viper.SetConfigType("toml")
 
 	err = viper.ReadInConfig()
 	if err != nil {
@@ -72,7 +72,12 @@ func load() bool {
 	}
 	err = viper.GetViper().Unmarshal(&conf)
 	if err != nil {
-		fmt.Printf("sfu config file %s loaded failed. %v\n", file, err)
+		fmt.Printf("sfu extended config file %s loaded failed. %v\n", file, err)
+		return false
+	}
+	err = viper.GetViper().Unmarshal(&conf.Config)
+	if err != nil {
+		fmt.Printf("sfu core config file %s loaded failed. %v\n", file, err)
 		return false
 	}
 
